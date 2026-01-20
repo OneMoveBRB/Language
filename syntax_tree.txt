@@ -1,0 +1,20 @@
+digraph AST {
+	rankdir=HR;
+	node [shape=record, style=filled, fillcolor=lightblue];
+	edge [fontsize=10,  color=black];
+
+	node1 [label="{{{<f0> 0x504000000050 | <f1> type = VARIABLE | <f2> data = x}} | { <f3> left: (nil) | <f4> right: (nil)}}"];
+	node2 [label="{{{<f0> 0x504000000090 | <f1> type = VARIABLE | <f2> data = y}} | { <f3> left: (nil) | <f4> right: (nil)}}"];
+	node3 [label="{{{<f0> 0x5040000000d0 | <f1> type = OPERATION | <f2> data = =}} | { <f3> left: 0x504000000050 | <f4> right: 0x504000000090}}"];
+	node3:f3 -> node1 [color=red, dir=both, arrowhead=normal];
+	node3:f4 -> node2 [color=green, dir=both, arrowhead=normal];
+	node4 [label="{{{<f0> 0x504000000110 | <f1> type = VARIABLE | <f2> data = z}} | { <f3> left: (nil) | <f4> right: (nil)}}"];
+	node5 [label="{{{<f0> 0x504000000150 | <f1> type = OPERATION | <f2> data = =}} | { <f3> left: 0x5040000000d0 | <f4> right: 0x504000000110}}"];
+	node5:f3 -> node3 [color=red, dir=both, arrowhead=normal];
+	node5:f4 -> node4 [color=green, dir=both, arrowhead=normal];
+	node6 [label="{{{<f0> 0x504000000190 | <f1> type = VARIABLE | <f2> data = a}} | { <f3> left: (nil) | <f4> right: (nil)}}"];
+	node7 [label="{{{<f0> 0x5040000001d0 | <f1> type = OPERATION | <f2> data = =}} | { <f3> left: 0x504000000150 | <f4> right: 0x504000000190}}"];
+	node7:f3 -> node5 [color=red, dir=both, arrowhead=normal];
+	node7:f4 -> node6 [color=green, dir=both, arrowhead=normal];
+	
+}

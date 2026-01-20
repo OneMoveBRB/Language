@@ -1,0 +1,25 @@
+digraph SymbolTable {
+	rankdir=HR;
+	node [shape=record, style=filled, fillcolor=lightblue];
+	edge [fontsize=10,  color=green];
+
+	node [shape=record, style="filled", fillcolor="lightpink"];
+	stack [label="<0> 0 | <1> 1 | <2> 2 | <3> 3 | <4> 4 | <5> 5 | <6> 6 | <7> 7 ", width=5.0];
+
+	node [shape=record, style="filled", fillcolor="lightblue"];
+
+	current_scope [label="CURRENT", shape=plaintext, fillcolor="orange"];
+
+	scope0 [label="{<f0>0x503000000250 | <level>level: 0|{<prev_port>prev: (nil)}}"];
+	scope1 [label="{<f2> 0x503000000400 | <f1>level: 2|{<prev_port>prev: 0x503000000340}}"];
+	scope2 [label="{<f1> 0x503000000340 | <f1>level: 1|{<prev_port>prev: 0x503000000250}}"];
+	stack:0 -> scope1 [color=red, arrowhead=normal];
+	scope1:prev_port -> scope2 [color=green, arrowhead=normal];
+	scope2:prev_port -> scope0 [color=green, arrowhead=normal];
+	scope3 [label="{<f2> 0x503000000580 | <f1>level: 2|{<prev_port>prev: 0x5030000004c0}}"];
+	scope4 [label="{<f1> 0x5030000004c0 | <f1>level: 1|{<prev_port>prev: 0x503000000250}}"];
+	scope3:prev_port -> scope4 [color=green, arrowhead=normal];
+	scope4:prev_port -> scope0 [color=green, arrowhead=normal];
+	current_scope -> scope3[color=brown, arrowhead=normal];
+	
+}
