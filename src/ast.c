@@ -56,6 +56,10 @@ AST_Node* AST_NodeInit(AST_Node* parent, AST_Node* left, AST_Node* right, AST_El
     va_start(args, type);
 
     switch (type) {
+    case AST_ELEM_TYPE_DECLARATION:
+        node->data.declaration_type = va_arg_enum(ConstType);
+        break;
+
     case AST_ELEM_TYPE_OPERATION:
         node->data.operation = va_arg_enum(AST_ElemOperation);
         break;
@@ -89,6 +93,9 @@ AST_Node* AST_NodeInit(AST_Node* parent, AST_Node* left, AST_Node* right, AST_El
             node->data.constant.data.char_const = (char)va_arg(args, int); // char
             break;
 
+        case CONST_TYPE_VOID:
+            assert(0);
+
         case CONST_TYPE_UNDEFINED:
             assert(0);
 
@@ -117,6 +124,10 @@ AST_Err_t AST_NodeDestroy(AST_Node** node_ptr) {
     AST_Node* node = *node_ptr;
     
     switch (node->type) {
+    case AST_ELEM_TYPE_DECLARATION:
+        node->data.declaration_type = CONST_TYPE_UNDEFINED;
+        break;
+
     case AST_ELEM_TYPE_CONST: 
         node->data.constant.data.long_const = 0;
         node->data.constant.type = CONST_TYPE_UNDEFINED;

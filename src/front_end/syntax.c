@@ -26,10 +26,25 @@
 #define DIV_(left, right) \
     AST_NodeInit(NULL, left, right, AST_ELEM_TYPE_OPERATION, AST_ELEM_OPERATION_DIV)
 
+#define DECL_(x) \
+    AST_NodeInit(NULL, NULL, NULL, AST_ELEM_TYPE_DECLARATION, x)
+
+#define SENTINEL \
+    AST_NodeInit(NULL, NULL, NULL, AST_ELEM_TYPE_OPERATION, AST_ELEM_OPERATION_SENTINEL)
+
 #define OP_(left, right, type) \
     AST_NodeInit(NULL, left, right, AST_ELEM_TYPE_OPERATION, type)
 
+typedef AST_Node* (*SyntaxFunc)(List_t*, size_t*);
+
 static AST_Node* GetG(List_t* tokens, size_t *idx);
+static AST_Node* GetStatement(List_t* tokens, size_t* idx);
+static AST_Node* GetIfStatement(List_t* tokens, size_t *idx);
+static AST_Node* GetWhileStatement(List_t* tokens, size_t *idx);
+static AST_Node* GetReturnStatement(List_t* tokens, size_t *idx);
+static AST_Node* GetBlock(List_t* tokens, size_t* idx);
+static AST_Node* GetExprStatement(List_t* tokens, size_t *idx);
+static AST_Node* GetVarDec(List_t* tokens, size_t *idx);
 static AST_Node* GetAssignment(List_t* tokens, size_t *idx);
 static AST_Node* GetExpression(List_t* tokens, size_t *idx);
 static AST_Node* GetLogicalOr(List_t* tokens, size_t *idx);
@@ -39,6 +54,7 @@ static AST_Node* GetComparison(List_t* tokens, size_t *idx);
 static AST_Node* GetTerm(List_t* tokens, size_t *idx);
 static AST_Node* GetFactor(List_t* tokens, size_t *idx);
 static AST_Node* GetPrimary(List_t* tokens, size_t *idx);
+static AST_Node* GetDataType(List_t* tokens, size_t *idx);
 static AST_Node* GetIdentifier(List_t* tokens, size_t *idx);
 static AST_Node* GetNumber(List_t* tokens, size_t* idx);
 
@@ -59,7 +75,7 @@ static AST_Node* GetG(List_t* tokens, size_t *idx) {
     assert( tokens != NULL );
     assert( idx != NULL );
 
-    AST_Node* node = GetAssignment(tokens, idx);
+    AST_Node* node = GetIfStatement(tokens, idx);
 
     Token* token = (Token*)ListGet(tokens, *idx);
     if (token->type == TOKEN_TYPE_END) {
@@ -69,7 +85,302 @@ static AST_Node* GetG(List_t* tokens, size_t *idx) {
     return NULL;
 }
 
-static AST_Node* GetAssignment(List_t* tokens, size_t *idx) {
+static AST_Node* GetStatement(List_t* tokens, size_t* idx) {
+    assert( tokens != NULL );
+    assert( idx != NULL );
+
+    AST_Node* statement = NULL;
+    SyntaxFunc statements[] = {
+        GetVarDec,
+        GetAssignment,
+        GetIfStatement,
+        GetWhileStatement,
+        GetReturnStatement,
+        GetBlock,
+        GetExprStatement
+    };
+    size_t statements_size = sizeof(statements)/sizeof(SyntaxFunc);
+
+    for (size_t i = 0; i < statements_size; i++) {
+        statement = statements[i](tokens, idx);
+        if (statement != NULL) {
+            break;
+        }
+    }
+
+    return statement;
+}
+
+static AST_Node* GetIfStatement(List_t* tokens, size_t *idx) {
+    assert( tokens != NULL );
+    assert( idx != NULL );
+
+    Token* token = (Token*)ListGet(tokens, *idx);
+    if (token->type != TOKEN_TYPE_STATEMENT_IF) {
+        return NULL;
+    }
+
+    *idx = ListNext(tokens, *idx);
+
+    AST_Node* if_statement = OP_(NULL, NULL, AST_ELEM_OPERATION_IF);
+    if (if_statement == NULL) {
+        assert(0); //FIXME - error handler
+    }
+
+    token = (Token*)ListGet(tokens, *idx);
+    if (token->type != TOKEN_TYPE_ROUND_BRACKET_OPEN) {
+        assert(0); //FIXME - error handler
+    }
+
+    *idx = ListNext(tokens, *idx);
+
+    AST_Node* expression = GetExpression(tokens, idx);
+    if (expression == NULL) {
+        assert(0); //FIXME - error handler
+    }
+
+    token = (Token*)ListGet(tokens, *idx);
+    if (token->type != TOKEN_TYPE_ROUND_BRACKET_CLOSE) {
+        assert(0); //FIXME - error handler
+    }
+
+    *idx = ListNext(tokens, *idx);
+
+    AST_Node* if_block = GetBlock(tokens, idx);
+    if (if_block == NULL) {
+        assert(0); //FIXME - error handler
+    }
+
+    if_statement->left = expression;
+    if_statement->right = if_block;
+
+    expression->parent = if_statement;
+    if_block->parent = if_statement;
+
+    AST_Node* end_block = if_block;
+    while (end_block->right != NULL) {
+        end_block = end_block->right;
+    }
+    
+    token = (Token*)ListGet(tokens, *idx);
+    if (token->type == TOKEN_TYPE_STATEMENT_ELSE) {
+        *idx = ListNext(tokens, *idx);
+
+        if (((Token*)ListGet(tokens, *idx))->type == TOKEN_TYPE_STATEMENT_IF) {
+            AST_Node* next_if = GetIfStatement(tokens, idx);
+
+            end_block->right = next_if;
+            next_if->parent = end_block;
+        } else {
+            AST_Node* else_statement = OP_(NULL, NULL, AST_ELEM_OPERATION_ELSE);
+            if (else_statement == NULL) {
+                assert(0); //FIXME - error handler
+            }
+
+            AST_Node* else_block = GetBlock(tokens, idx);
+            if (else_block == NULL) {
+                assert(0); //FIXME - error handler
+            }
+
+            else_statement->right = else_block;
+            else_block->parent = else_statement;
+
+            end_block->right = else_statement;
+            else_statement->parent = end_block;
+        }
+    }
+
+    return if_statement;
+}
+
+static AST_Node* GetWhileStatement(List_t* tokens, size_t *idx) {
+    assert( tokens != NULL );
+    assert( idx != NULL );
+
+    Token* token = (Token*)ListGet(tokens, *idx);
+    if (token->type != TOKEN_TYPE_STATEMENT_WHILE) {
+        return NULL;
+    }
+
+    *idx = ListNext(tokens, *idx);
+
+    AST_Node* while_statement = OP_(NULL, NULL, AST_ELEM_OPERATION_WHILE);
+    if (while_statement == NULL) {
+        assert(0); //FIXME - error handler
+    }
+
+    token = (Token*)ListGet(tokens, *idx);
+    if (token->type != TOKEN_TYPE_ROUND_BRACKET_OPEN) {
+        assert(0); //FIXME - error handler
+    }
+
+    *idx = ListNext(tokens, *idx);
+
+    AST_Node* expression = GetExpression(tokens, idx);
+    if (expression == NULL) {
+        assert(0); //FIXME - error handler
+    }
+
+    token = (Token*)ListGet(tokens, *idx);
+    if (token->type != TOKEN_TYPE_ROUND_BRACKET_CLOSE) {
+        assert(0); //FIXME - error handler
+    }
+    
+    *idx = ListNext(tokens, *idx);
+
+    AST_Node* block = GetBlock(tokens, idx);
+    if (block == NULL) {
+        assert(0); //FIXME - error handler
+    }
+
+    while_statement->left = expression;
+    while_statement->right = block;
+
+    expression->parent = while_statement;
+    block->parent = while_statement;
+
+    return while_statement;
+}
+
+static AST_Node* GetReturnStatement(List_t* tokens, size_t* idx) {
+    assert( tokens != NULL );
+    assert( idx != NULL );
+
+    Token* token = (Token*)ListGet(tokens, *idx);
+    if (token->type != TOKEN_TYPE_STATEMENT_RETURN) {
+        return NULL;
+    }
+
+    *idx = ListNext(tokens, *idx);
+
+    AST_Node* return_node = OP_(NULL, NULL, AST_ELEM_OPERATION_RETURN);
+    if (return_node == NULL) {
+        assert(0); //FIXME - error handler
+    }
+
+    AST_Node* expr_statement = GetExprStatement(tokens, idx);
+    if (expr_statement == NULL) {
+        assert(0); //FIXME - error handler
+    }
+
+    return_node->right = expr_statement;
+    expr_statement->parent = return_node;
+
+    return return_node;
+}
+
+static AST_Node* GetBlock(List_t* tokens, size_t* idx) {
+    assert( tokens != NULL );
+    assert( idx != NULL );
+
+    Token* token = (Token*)ListGet(tokens, *idx);
+    if (token->type != TOKEN_TYPE_CURLY_BRACKET_OPEN) {
+        return NULL;
+    }
+
+    *idx = ListNext(tokens, *idx);
+
+    AST_Node* block = SENTINEL;
+    AST_Node* statement = block;
+
+    while (( statement->left = GetStatement(tokens, idx) ) != NULL) {
+        statement->right = SENTINEL;
+
+        statement->left->parent = statement;
+        statement->right->parent = statement;
+
+        statement = statement->right;
+    }
+
+    token = (Token*)ListGet(tokens, *idx);
+    if (token->type != TOKEN_TYPE_CURLY_BRACKET_CLOSE) {
+        assert(0); //FIXME - error handler
+    }
+
+    *idx = ListNext(tokens, *idx);
+
+    return block;
+}
+
+static AST_Node* GetExprStatement(List_t* tokens, size_t* idx) {
+    assert( tokens != NULL );
+    assert( idx != NULL );
+
+    AST_Node* expression = GetExpression(tokens, idx);
+    if (expression == NULL) {
+        return NULL;
+    }
+
+    Token* token = (Token*)ListGet(tokens, *idx);
+    if (token->type != TOKEN_TYPE_SEMICOLON) {
+        assert(0); //FIXME - error handler
+    }
+
+    *idx = ListNext(tokens, *idx);
+
+    return expression;
+}
+
+static AST_Node* GetVarDec(List_t* tokens, size_t* idx) {
+    assert( tokens != NULL );
+    assert( idx != NULL );
+
+    AST_Node* data_type = GetDataType(tokens, idx);
+    if (data_type == NULL) {
+        return NULL;
+    }
+
+    AST_Node* identifier = GetIdentifier(tokens, idx);
+    if (identifier == NULL) {
+        assert(0); //FIXME - error handler
+    }
+
+    Token* token = (Token*)ListGet(tokens, *idx);
+    if (token->type == TOKEN_TYPE_ASSIGNMENT) {
+        AST_Node* assignment = OP_(NULL, NULL, AST_ELEM_OPERATION_ASSIGNMENT);
+        if (assignment == NULL) {
+            assert(0); //FIXME - error handler
+        }
+
+        *idx = ListNext(tokens, *idx);
+
+        AST_Node* expression = GetExpression(tokens, idx);
+        if (expression == NULL) {
+            assert(0); //FIXME - error handler
+        }
+
+        token = (Token*)ListGet(tokens, *idx);
+        if (token->type != TOKEN_TYPE_SEMICOLON) {
+            assert(0); //FIXME - error handler
+        }
+
+        *idx = ListNext(tokens, *idx);
+
+        data_type->right = assignment;
+        assignment->parent = data_type;
+        assignment->left = identifier;
+        assignment->right = expression;
+        identifier->parent = assignment;
+        expression->parent = assignment;
+
+        return data_type;
+
+    } else if (token->type == TOKEN_TYPE_SEMICOLON) {
+        *idx = ListNext(tokens, *idx);
+
+        data_type->right = identifier;
+        identifier->parent = data_type;
+
+        return data_type;
+    } else {
+        assert(0); //FIXME - error handler
+    }
+
+    assert(0);
+    return NULL;
+}
+
+static AST_Node* GetAssignment(List_t* tokens, size_t* idx) {
     assert( tokens != NULL );
     assert( idx != NULL );
 
@@ -112,14 +423,14 @@ static AST_Node* GetAssignment(List_t* tokens, size_t *idx) {
     return NULL;
 }
 
-static AST_Node* GetExpression(List_t* tokens, size_t *idx) {
+static AST_Node* GetExpression(List_t* tokens, size_t* idx) {
     assert( tokens != NULL );
     assert( idx != NULL );
 
     return GetLogicalOr(tokens, idx);
 }
 
-static AST_Node* GetLogicalOr(List_t* tokens, size_t *idx) {
+static AST_Node* GetLogicalOr(List_t* tokens, size_t* idx) {
     assert( tokens != NULL );
     assert( idx != NULL );
 
@@ -136,11 +447,11 @@ static AST_Node* GetLogicalOr(List_t* tokens, size_t *idx) {
         token = (Token*)ListGet(tokens, *idx);
     }
 
-    assert(node1 != NULL);
+    // assert(node1 != NULL);
     return node1;
 }
 
-static AST_Node* GetLogicalAnd(List_t* tokens, size_t *idx) {
+static AST_Node* GetLogicalAnd(List_t* tokens, size_t* idx) {
     assert( tokens != NULL );
     assert( idx != NULL );
 
@@ -157,11 +468,11 @@ static AST_Node* GetLogicalAnd(List_t* tokens, size_t *idx) {
         token = (Token*)ListGet(tokens, *idx);
     }
 
-    assert(node1 != NULL);
+    // assert(node1 != NULL);
     return node1;
 }
 
-static AST_Node* GetEquality(List_t* tokens, size_t *idx) {
+static AST_Node* GetEquality(List_t* tokens, size_t* idx) {
     assert( tokens != NULL );
     assert( idx != NULL );
 
@@ -182,11 +493,11 @@ static AST_Node* GetEquality(List_t* tokens, size_t *idx) {
         token = (Token*)ListGet(tokens, *idx);
     }
 
-    assert(node1 != NULL);
+    // assert(node1 != NULL);
     return node1;
 }
 
-static AST_Node* GetComparison(List_t* tokens, size_t *idx) {
+static AST_Node* GetComparison(List_t* tokens, size_t* idx) {
     assert( tokens != NULL );
     assert( idx != NULL );
 
@@ -213,11 +524,11 @@ static AST_Node* GetComparison(List_t* tokens, size_t *idx) {
         token = (Token*)ListGet(tokens, *idx);
     }
 
-    assert(node1 != NULL);
+    // assert(node1 != NULL);
     return node1;
 }
 
-static AST_Node* GetTerm(List_t* tokens, size_t *idx) {
+static AST_Node* GetTerm(List_t* tokens, size_t* idx) {
     assert( tokens != NULL );
     assert( idx != NULL );
 
@@ -238,11 +549,11 @@ static AST_Node* GetTerm(List_t* tokens, size_t *idx) {
         token = (Token*)ListGet(tokens, *idx);
     }
 
-    assert(node1 != NULL);
+    // assert(node1 != NULL);
     return node1;
 }
 
-static AST_Node* GetFactor(List_t* tokens, size_t *idx) {
+static AST_Node* GetFactor(List_t* tokens, size_t* idx) {
     assert( tokens != NULL );
     assert( idx != NULL );
 
@@ -263,11 +574,11 @@ static AST_Node* GetFactor(List_t* tokens, size_t *idx) {
         token = (Token*)ListGet(tokens, *idx);
     }
 
-    assert(node1 != NULL);
+    // assert(node1 != NULL);
     return node1;
 }
 
-static AST_Node* GetPrimary(List_t* tokens, size_t *idx) {
+static AST_Node* GetPrimary(List_t* tokens, size_t* idx) {
     assert( tokens != NULL );
     assert( idx != NULL );
 
@@ -307,13 +618,54 @@ static AST_Node* GetPrimary(List_t* tokens, size_t *idx) {
     }
 
     fprintf(stderr, "Code: %d\n", token->type);
-    assert(node != NULL);
+    // assert(node != NULL);
     return node;
 }
 
 // static AST_Node* GetArguments(List_t* tokens, size_t *idx) {}
 
-static AST_Node* GetIdentifier(List_t* tokens, size_t *idx) {
+static AST_Node* GetDataType(List_t* tokens, size_t* idx) {
+    assert( tokens != NULL );
+    assert( idx != NULL );
+
+    size_t i = *idx;
+
+    Token* token = (Token*)ListGet(tokens, i);
+    if (token->type == TOKEN_TYPE_SHORT) {
+        *idx = ListNext(tokens, i);
+
+        return DECL_(CONST_TYPE_SHORT);
+
+    } else if (token->type == TOKEN_TYPE_INT) {
+        *idx = ListNext(tokens, i);
+
+        return DECL_(CONST_TYPE_INT);
+
+    } else if (token->type == TOKEN_TYPE_LONG) {
+        *idx = ListNext(tokens, i);
+
+        return DECL_(CONST_TYPE_LONG);
+
+    } else if (token->type == TOKEN_TYPE_DOUBLE) {
+        *idx = ListNext(tokens, i);
+
+        return DECL_(CONST_TYPE_DOUBLE);
+
+    } else if (token->type == TOKEN_TYPE_CHAR) {
+        *idx = ListNext(tokens, i);
+
+        return DECL_(CONST_TYPE_CHAR);
+
+    } else if (token->type == TOKEN_TYPE_VOID) {
+        *idx = ListNext(tokens, i);
+
+        return DECL_(CONST_TYPE_VOID);
+    }
+
+    return NULL;
+}
+
+static AST_Node* GetIdentifier(List_t* tokens, size_t* idx) {
     assert( tokens != NULL );
     assert( idx != NULL );
 
@@ -357,6 +709,9 @@ static AST_Node* GetNumber(List_t* tokens, size_t* idx) {
 
     case CONST_TYPE_CHAR:
         return c(CONST_TYPE_CHAR, token->data.constant.data.char_const);
+
+    case CONST_TYPE_VOID:
+        assert(0);
 
     case CONST_TYPE_UNDEFINED:
         assert(0);

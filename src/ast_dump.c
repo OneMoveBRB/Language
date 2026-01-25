@@ -26,10 +26,10 @@ AST_OperationMapping ast_operation_dict[] = {
     {"*"     ,      AST_ELEM_OPERATION_MUL       },
     {"/"     ,      AST_ELEM_OPERATION_DIV       },
 
-    {"<"     ,      AST_ELEM_OPERATION_LT        },
-    {">"     ,      AST_ELEM_OPERATION_GT        },
-    {"<="    ,      AST_ELEM_OPERATION_LE        },
-    {">="    ,      AST_ELEM_OPERATION_GE        },
+    {"\\<"     ,      AST_ELEM_OPERATION_LT        },
+    {"\\>"     ,      AST_ELEM_OPERATION_GT        },
+    {"\\<="    ,      AST_ELEM_OPERATION_LE        },
+    {"\\>="    ,      AST_ELEM_OPERATION_GE        },
     {"=="    ,      AST_ELEM_OPERATION_EE        },
     {"!="    ,      AST_ELEM_OPERATION_NE        },
 
@@ -157,6 +157,10 @@ static size_t DotInitNodes(AST_Node* node, FILE* fp, size_t* node_cnt) {
             fprintf(fp, "%c", node->data.constant.data.char_const);
             break;
 
+        case CONST_TYPE_VOID:
+            fprintf(fp, "void");
+            break;
+
         case CONST_TYPE_UNDEFINED:
             assert(0);
         
@@ -177,6 +181,13 @@ static size_t DotInitNodes(AST_Node* node, FILE* fp, size_t* node_cnt) {
                     " | { <f3> left: %p | <f4> right: %p}}\"];\n\t", 
                 *node_cnt, node, GetStrOp(node->data.operation), node->left, node->right);
         }
+
+    else if (node->type == AST_ELEM_TYPE_DECLARATION) { 
+        fprintf(fp, "node%zu [label=\"{{{<f0> %p | <f1> type = DECLARATION | <f2> data = %s}}"
+                    " | { <f3> left: %p | <f4> right: %p}}\"];\n\t", 
+                *node_cnt, node, GetStrConst(node->data.declaration_type), node->left, node->right);
+        }
+
     else if (node->type == AST_ELEM_TYPE_VARIABLE)
         fprintf(fp, "node%zu [label=\"{{{<f0> %p | <f1> type = VARIABLE | <f2> data = %s}}"
                     " | { <f3> left: %p | <f4> right: %p}}\"];\n\t", 

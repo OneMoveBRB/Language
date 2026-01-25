@@ -5,6 +5,7 @@
 
 typedef enum AST_ElemType {
     AST_ELEM_TYPE_UNDEFINED,
+    AST_ELEM_TYPE_DECLARATION,
     AST_ELEM_TYPE_OPERATION,
     AST_ELEM_TYPE_VARIABLE,
     AST_ELEM_TYPE_CONST
@@ -12,7 +13,14 @@ typedef enum AST_ElemType {
 
 typedef enum AST_ElemOperation {
     AST_ELEM_OPERATION_UNDEFINED,
-
+/*
+    AST_ELEM_SHORT,
+    AST_ELEM_INT,
+    AST_ELEM_LONG,
+    AST_ELEM_DOUBLE,
+    AST_ELEM_CHAR,
+    AST_ELEM_VOID,
+*/
     AST_ELEM_OPERATION_SENTINEL,
 
     AST_ELEM_OPERATION_ADD,
@@ -33,6 +41,7 @@ typedef enum AST_ElemOperation {
     AST_ELEM_OPERATION_ASSIGNMENT,
 
     AST_ELEM_OPERATION_IF,
+    // AST_ELEM_OPERATION_ELIF,
     AST_ELEM_OPERATION_ELSE,
     AST_ELEM_OPERATION_WHILE,
     AST_ELEM_OPERATION_BREAK,
@@ -47,7 +56,8 @@ typedef enum ConstType {
     CONST_TYPE_INT,
     CONST_TYPE_LONG,
     CONST_TYPE_DOUBLE,
-    CONST_TYPE_CHAR
+    CONST_TYPE_CHAR,
+    CONST_TYPE_VOID
 } ConstType;
 
 typedef union ConstData {
@@ -65,6 +75,7 @@ typedef struct Const {
 #endif /* CONST */
 
 typedef union AST_ElemData {
+    ConstType declaration_type;
     AST_ElemOperation operation;
     char* variable;
     Const constant;
