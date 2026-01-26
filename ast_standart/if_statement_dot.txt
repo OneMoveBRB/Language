@@ -1,0 +1,40 @@
+digraph G {
+  rankdir=HR;
+  node [shape=record, style=filled, fillcolor=lightblue];
+  edge [fontsize=10,  color=black];
+  
+  node1 [label="{if | {<l> l | <r> r}}"];
+  node2 [label="{cond | {<l> l | <r> r}}"];
+  node3 [label="{body | {<l> l | <r> r}}"];
+  node4 [label="{; | {<l> l | <r> r}}"];
+  node5 [label="{; | {<l> l | <r> r}}"];
+  
+  node6  [label="{if | {<l> l | <r> r}}"];
+  node7  [label="{cond | {<l> l | <r> r}}"];
+  node8  [label="{body | {<l> l | <r> r}}"];
+  node9  [label="{; | {<l> l | <r> r}}"];
+  node10 [label="{; | {<l> l | <r> r}}"];
+  
+  node11 [label="{else | {<l> l | <r> r}}"];
+  node12  [label="{; | {<l> l | <r> r}}"];
+  node13 [label="{; | {<l> l | <r> r}}"];
+  node14  [label="{body | {<l> l | <r> r}}"];
+  
+  node1:l -> node2 [color=red, dir=both, arrowhead=normal];
+  node1:r -> node4 [color=green, dir=both, arrowhead=normal];
+  node4:l -> node3 [color=red, dir=both, arrowhead=normal];
+  node4:r -> node5 [color=green, dir=both, arrowhead=normal];
+  
+  node5:r -> node6 [color=green, dir=both, arrowhead=normal];
+  
+  node6:l -> node7 [color=red, dir=both, arrowhead=normal];
+  node6:r -> node9 [color=green, dir=both, arrowhead=normal];
+  node9:l -> node8 [color=red, dir=both, arrowhead=normal];
+  node9:r -> node10 [color=green, dir=both, arrowhead=normal];
+  
+  node10:r -> node11 [color=green, dir=both, arrowhead=normal];
+  node11:l -> node14 [color=red, dir=both, arrowhead=normal];
+  node11:r -> node12 [color=green, dir=both, arrowhead=normal];
+  
+  node12:r -> node13 [color=green, dir=both, arrowhead=normal];
+}

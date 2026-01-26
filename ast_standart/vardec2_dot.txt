@@ -1,0 +1,11 @@
+digraph G {
+  rankdir=HR;
+  node [shape=record, style=filled, fillcolor=lightblue];
+  edge [fontsize=10,  color=black];
+  
+  node1 [label="{int | {<l> l | <r> r}}"];
+  node2 [label="{x | {<l> l | <r> r}}"];
+  
+  node1:r -> node2 [color=green, dir=both, arrowhead=normal];
+  
+}
