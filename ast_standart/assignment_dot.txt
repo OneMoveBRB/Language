@@ -1,0 +1,23 @@
+digraph G {
+  rankdir=HR;
+  node [shape=record, style=filled, fillcolor=lightblue];
+  edge [fontsize=10,  color=black];
+  
+  node1 [label="{x | {<l> l | <r> r}}"];
+  node2 [label="{y | {<l> l | <r> r}}"];
+  node3 [label="{z | {<l> l | <r> r}}"];
+  node4 [label="{expr | {<l> l | <r> r}}"];
+  
+  node5 [label="{= | {<l> l | <r> r}}"];
+  node6 [label="{= | {<l> l | <r> r}}"];
+  node7 [label="{= | {<l> l | <r> r}}"];
+  
+  node5:l -> node1 [color=red, dir=both, arrowhead=normal];
+  node5:r -> node2 [color=green, dir=both, arrowhead=normal];
+  
+  node6:l -> node5 [color=red, dir=both, arrowhead=normal];
+  node6:r -> node3 [color=green, dir=both, arrowhead=normal];
+  
+  node7:l -> node6 [color=red, dir=both, arrowhead=normal];
+  node7:r -> node4 [color=green, dir=both, arrowhead=normal];
+}
