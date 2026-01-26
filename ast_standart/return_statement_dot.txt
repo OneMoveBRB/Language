@@ -1,0 +1,12 @@
+digraph G {
+  rankdir=HR;
+  node [shape=record, style=filled, fillcolor=lightblue];
+  edge [fontsize=10,  color=black];
+  
+  node1 [label="{return | {<l> l | <r> r}}"];
+  node3 [label="{expr | {<l> l | <r> r}}"];
+  
+  
+  node1:r -> node3 [color=green, dir=both, arrowhead=normal];
+  
+}

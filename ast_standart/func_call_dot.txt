@@ -1,0 +1,17 @@
+digraph G {
+  rankdir=HR;
+  node [shape=record, style=filled, fillcolor=lightblue];
+  edge [fontsize=10,  color=black];
+  
+  node1 [label="{call | {<l> l | <r> r}}"];
+  node2 [label="{func | {<l> l | <r> r}}"];
+  node3 [label="{args | {<l> l | <r> r}}"];
+  node4 [label="{; | {<l> l | <r> r}}"];
+  
+  
+  node1:l -> node4 [color=red, dir=both, arrowhead=normal];
+  node1:r -> node2 [color=green, dir=both, arrowhead=normal];
+  
+  node4:r -> node3 [color=green, dir=both, arrowhead=normal];
+  
+}

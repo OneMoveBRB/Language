@@ -1,0 +1,25 @@
+digraph G {
+  rankdir=HR;
+  node [shape=record, style=filled, fillcolor=lightblue];
+  edge [fontsize=10,  color=black];
+  
+  node1 [label="{func | {<l> l | <r> r}}"];
+  node2 [label="{int | {<l> l | <r> r}}"];
+  node3 [label="{a | {<l> l | <r> r}}"];
+  node4 [label="{char | {<l> l | <r> r}}"];
+  node5 [label="{b | {<l> l | <r> r}}"];
+  node6 [label="{block | {<l> l | <r> r}}"];
+  node7 [label="{int | {<l> l | <r> r}}"];
+  
+  
+  node7:r -> node1 [color=green, dir=both, arrowhead=normal];
+  
+  node1:l -> node2 [color=red, dir=both, arrowhead=normal];
+  node2:r -> node3 [color=green, dir=both, arrowhead=normal];
+  node2:l -> node4 [color=red, dir=both, arrowhead=normal];
+  
+  node4:r -> node5 [color=green, dir=both, arrowhead=normal];
+  
+  node1:r -> node6 [color=green, dir=both, arrowhead=normal];
+  
+}

@@ -26,10 +26,10 @@ AST_OperationMapping ast_operation_dict[] = {
     {"*"     ,      AST_ELEM_OPERATION_MUL       },
     {"/"     ,      AST_ELEM_OPERATION_DIV       },
 
-    {"\\<"     ,      AST_ELEM_OPERATION_LT        },
-    {"\\>"     ,      AST_ELEM_OPERATION_GT        },
-    {"\\<="    ,      AST_ELEM_OPERATION_LE        },
-    {"\\>="    ,      AST_ELEM_OPERATION_GE        },
+    {"\\<"     ,      AST_ELEM_OPERATION_LT      },
+    {"\\>"     ,      AST_ELEM_OPERATION_GT      },
+    {"\\<="    ,      AST_ELEM_OPERATION_LE      },
+    {"\\>="    ,      AST_ELEM_OPERATION_GE      },
     {"=="    ,      AST_ELEM_OPERATION_EE        },
     {"!="    ,      AST_ELEM_OPERATION_NE        },
 
@@ -39,6 +39,8 @@ AST_OperationMapping ast_operation_dict[] = {
     {"else"  ,      AST_ELEM_OPERATION_ELSE      },
     {"while" ,      AST_ELEM_OPERATION_WHILE     },
     {"break" ,      AST_ELEM_OPERATION_BREAK     },
+
+    {"call",        AST_ELEM_OPERATION_CALL      },
     {"return",      AST_ELEM_OPERATION_RETURN    }
 };
 

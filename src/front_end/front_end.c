@@ -39,7 +39,7 @@ FrontEndErr_t FrontEnd(AST** ast, const char* file_name) {
 
     size_t read_elems = LexicalAnalysis((const char*)buffer->data, tokens);
 
-    /*
+/*
     printf("Read elems: %zu\n", read_elems);
 
     for (size_t i = ListFront(tokens); i != ListEnd(tokens); i++) {
@@ -57,7 +57,7 @@ FrontEndErr_t FrontEnd(AST** ast, const char* file_name) {
             printf("\n");
         }
     }
-    */
+*/
 
     *ast = SyntaxAnalysis(tokens);
 

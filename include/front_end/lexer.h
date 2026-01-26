@@ -17,11 +17,11 @@ size_t LexicalAnalysis(const char* s, List_t* tokens);
 /*
 Program         := (FuncDec | StatementList) "!END_TOKEN!"
 
-FuncDec         := DataTypes IDENTIFIER "(" (Parameters) ")" [Block | ";"]
-Parameters      := DataTypes IDENTIFIER ("," DataTypes IDENTIFIER)*
+FuncDec         := DataTypes IDENTIFIER "(" (Parameters) ")" [Block | ";"]            //ANCHOR - block done
+Parameters      := DataTypes IDENTIFIER ("," DataTypes IDENTIFIER)*                   //ANCHOR - done
 
 StatementList   := [Statement]*
-Statement       := VarDec
+Statement       := VarDec                                                             //ANCHOR - done
                  | Assignment
                  | IfStatement
                  | WhileStatement
@@ -54,9 +54,9 @@ Term            := Factor ( ['+''-'] Factor )*                                  
 Factor          := Primary ( ['*''/'] Primary )*                                      //ANCHOR - done
 Primary         := FuncCall | IDENTIFIER | NUM | "true" | "false" | '('Expression')'  //ANCHOR - done
 
-FuncCall        := IDENTIFIER ( "(" (Arguments) ")" )
+FuncCall        := IDENTIFIER "(" (Arguments) ")"                                     //ANCHOR - done
 
-Arguments       := Expression ("," Expression)*
+Arguments       := Expression ("," Expression)*                                       //ANCHOR - done
 DataTypes       := "short" | "int" | "long" | "char" | "void" | "float"               //ANCHOR - done
 
 IDENTIFIER      := TYPE_VARIABLE                                                      //ANCHOR - done

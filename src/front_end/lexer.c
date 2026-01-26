@@ -30,6 +30,7 @@ TokenTypeMapping reference_types[] = {
     {"short" ,   TOKEN_TYPE_SHORT               },
     {"int"   ,   TOKEN_TYPE_INT                 },
     {"long"  ,   TOKEN_TYPE_LONG                },
+    {"double",   TOKEN_TYPE_DOUBLE              },
     {"char"  ,   TOKEN_TYPE_CHAR                },
     {"void"  ,   TOKEN_TYPE_VOID                },
 
@@ -126,7 +127,7 @@ size_t LexicalAnalysis(const char* s, List_t* tokens) {
             size_t len = 1;
             ++s;
 
-            while (isalnum(*s)) {
+            while (isalnum(*s) || *s == '_') {
                 ++s;
                 ++len;
             }
