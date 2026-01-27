@@ -1,11 +1,11 @@
-#include "../include/symbol_table.h"
+#include "../../include/symbol_table/symbol_table.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
 
-#include "../include/utils.h"
+#include "../../include/utils.h"
 
 const int INITIAL_CAPACITY = 8;
 

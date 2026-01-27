@@ -1,6 +1,6 @@
 #include <stdio.h>
 
-#include "include/ast.h"
+#include "include/ast/ast.h"
 #include "include/front_end/front_end.h"
 
 const char* file_name = "syntax_test.c";

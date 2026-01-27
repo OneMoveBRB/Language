@@ -1,4 +1,4 @@
-#include "../include/ast.h"
+#include "../../include/ast/ast.h"
 
 #include <stdio.h>
 #include <stdarg.h>
@@ -6,9 +6,10 @@
 #include <string.h>
 #include <assert.h>
 
-#include "../include/utils.h"
+#include "../../include/utils.h"
 
-#define va_arg_enum(type) ((type)va_arg(args, int))
+#define va_arg_enum(type)   ((type)va_arg(args, int))
+#define EmptyNodeInit       AST_NodeInit(NULL, NULL, NULL, AST_ELEM_TYPE_UNDEFINED)
 
 AST* AST_Init() {
     AST* ast = (AST*)calloc(1, sizeof(AST));
@@ -107,7 +108,7 @@ AST_Node* AST_NodeInit(AST_Node* parent, AST_Node* left, AST_Node* right, AST_El
     }
 
     case AST_ELEM_TYPE_UNDEFINED:
-        assert(0);
+        break;
 
     default:
         assert(0);

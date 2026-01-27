@@ -17,6 +17,7 @@ int fib(int n) {
 
 int main() {
     int f = fib(10);
+    print(f);
 
     return 0;
 }

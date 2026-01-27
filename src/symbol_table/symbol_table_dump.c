@@ -1,4 +1,4 @@
-#include "../include/symbol_table_dump.h"
+#include "../../include/symbol_table/symbol_table_dump.h"
 
 #include <stdio.h>
 
@@ -7,7 +7,7 @@
 #include <string.h>
 #include <assert.h>
 
-#include "../include/io.h"
+#include "../../include/io.h"
 
 #define STACK_IDX(idx) \
     ((size_t)table->end_scopes->data + idx * table->end_scopes->meta.element_size)

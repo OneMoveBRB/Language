@@ -5,8 +5,8 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include "../../Stack/include/stack.h"
-#include "../HashTable/include/hash_table.h"
+#include "../../../Stack/include/stack.h"
+#include "../../HashTable/include/hash_table.h"
 
 typedef enum SymbolType {
     SYM_TYPE_VARIABLE,

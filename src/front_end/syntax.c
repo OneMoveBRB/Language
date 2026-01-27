@@ -5,7 +5,7 @@
 
 #include "../../List/list.h"
 
-#include "../../include/ast.h"
+#include "../../include/ast/ast.h"
 #include "../../include/front_end/front_end.h"
 
 #define c(x, y) \
@@ -49,6 +49,7 @@ static AST_Node* GetBlock(List_t* tokens, size_t* idx);
 static AST_Node* GetExprStatement(List_t* tokens, size_t *idx);
 static AST_Node* GetVarDec(List_t* tokens, size_t *idx);
 static AST_Node* GetAssignment(List_t* tokens, size_t *idx);
+static AST_Node* GetPrint(List_t* tokens, size_t* idx);
 static AST_Node* GetExpression(List_t* tokens, size_t *idx);
 static AST_Node* GetLogicalOr(List_t* tokens, size_t *idx);
 static AST_Node* GetLogicalAnd(List_t* tokens, size_t *idx);
@@ -57,6 +58,7 @@ static AST_Node* GetComparison(List_t* tokens, size_t *idx);
 static AST_Node* GetTerm(List_t* tokens, size_t *idx);
 static AST_Node* GetFactor(List_t* tokens, size_t *idx);
 static AST_Node* GetPrimary(List_t* tokens, size_t *idx);
+static AST_Node* GetInput(List_t* tokens, size_t* idx);
 static AST_Node* GetFuncCall(List_t* tokens, size_t *idx);
 static AST_Node* GetArguments(List_t* tokens, size_t *idx);
 static AST_Node* GetDataType(List_t* tokens, size_t *idx);
@@ -70,7 +72,8 @@ AST* SyntaxAnalysis(List_t* tokens) {
 
     size_t idx = ListFront(tokens);
     ast->root = GetG(tokens, &idx);
-    fprintf(stderr, "%p\n", ast->root);
+    assert(ast->root != NULL); //FIXME - error handler
+
     ast->root->parent = NULL;
 
     return ast;
@@ -234,7 +237,8 @@ static AST_Node* GetStatement(List_t* tokens, size_t* idx) {
         GetWhileStatement,
         GetReturnStatement,
         GetBlock,
-        GetExprStatement
+        GetExprStatement,
+        GetPrint
     };
     size_t statements_size = sizeof(statements)/sizeof(SyntaxFunc);
 
@@ -560,6 +564,46 @@ static AST_Node* GetAssignment(List_t* tokens, size_t* idx) {
     return NULL;
 }
 
+static AST_Node* GetPrint(List_t* tokens, size_t* idx) {
+    assert( tokens != NULL );
+    assert( idx != NULL );
+
+    Token* token = (Token*)ListGet(tokens, *idx);
+    if (token->type != TOKEN_TYPE_PRINT) {
+        return NULL;
+    }
+
+    *idx = ListNext(tokens, *idx);
+
+    token = (Token*)ListGet(tokens, *idx);
+    if (token->type != TOKEN_TYPE_ROUND_BRACKET_OPEN) {
+        assert(0); //FIXME - error handler
+    }
+
+    *idx = ListNext(tokens, *idx);
+
+    AST_Node* expression = GetExpression(tokens, idx);
+    if (expression == NULL) {
+        assert(0); //FIXME - error handler
+    }
+
+    token = (Token*)ListGet(tokens, *idx);
+    if (token->type != TOKEN_TYPE_ROUND_BRACKET_CLOSE) {
+        assert(0); //FIXME - error handler
+    }
+
+    *idx = ListNext(tokens, *idx);
+
+    token = (Token*)ListGet(tokens, *idx);
+    if (token->type != TOKEN_TYPE_SEMICOLON) {
+        assert(0); //FIXME - error handler
+    }
+
+    *idx = ListNext(tokens, *idx);
+
+    return OP_(NULL, expression, AST_ELEM_OPERATION_PRINT);
+}
+
 static AST_Node* GetExpression(List_t* tokens, size_t* idx) {
     assert( tokens != NULL );
     assert( idx != NULL );
@@ -732,6 +776,10 @@ static AST_Node* GetPrimary(List_t* tokens, size_t* idx) {
         return node;
     }
 
+    if ((node = GetInput(tokens, idx)) != NULL) {
+        return node;
+    }
+
     Token* token = (Token*)ListGet(tokens, *idx);
     if (token->type == TOKEN_TYPE_BOOL_TRUE) {
         *idx = ListNext(tokens, *idx);
@@ -753,9 +801,37 @@ static AST_Node* GetPrimary(List_t* tokens, size_t* idx) {
         *idx = ListNext(tokens, *idx);
     }
 
-    fprintf(stderr, "Code: %d\n", token->type);
+    // fprintf(stderr, "Code: %d\n", token->type);
     // assert(node != NULL);
     return node;
+}
+
+static AST_Node* GetInput(List_t* tokens, size_t* idx) {
+    assert( tokens != NULL );
+    assert( idx != NULL );
+
+    Token* token = (Token*)ListGet(tokens, *idx);
+    if (token->type != TOKEN_TYPE_INPUT) {
+        return NULL;
+    }
+
+    *idx = ListNext(tokens, *idx);
+
+    token = (Token*)ListGet(tokens, *idx);
+    if (token->type != TOKEN_TYPE_ROUND_BRACKET_OPEN) {
+        assert(0); //FIXME - error handler
+    }
+
+    *idx = ListNext(tokens, *idx);
+
+    token = (Token*)ListGet(tokens, *idx);
+    if (token->type != TOKEN_TYPE_ROUND_BRACKET_CLOSE) {
+        assert(0); //FIXME - error handler
+    }
+
+    *idx = ListNext(tokens, *idx);
+
+    return OP_(NULL, NULL, AST_ELEM_OPERATION_INPUT);
 }
 
 static AST_Node* GetFuncCall(List_t* tokens, size_t* idx) {
@@ -911,80 +987,3 @@ static AST_Node* GetNumber(List_t* tokens, size_t* idx) {
     assert(0);
     return NULL;
 }
-
-
-// [] - выполняется точно 1 раз
-// () - выполняется 0 или 1 раз
-// []* - выполняется >= 1 раз
-// ()* - выполняется >= 0 раз
-
-/*
-Program         := (FuncDec | StatementList) "!END_TOKEN!"
-
-FuncDec         := DataTypes IDENTIFIER "(" (Parameters) ")" [Block | ";"]
-Parameters      := DataTypes IDENTIFIER ("," DataTypes IDENTIFIER)*
-
-StatementList   := [Statement]*
-Statement       := VarDec
-                 | Assignment
-                 | IfStatement
-                 | WhileStatement
-                 | ReturnStatement
-                 | Block
-                 | ExprStatement
-
-
-IfStatement     := "if" "(" Expression ")" Block
-                    ("else if" "(" Expression ")" Block)*
-                    ("else" Block)
-WhileStatement  := "while" "(" Expression ")" Block
-ReturnStatement := "return" Expression ";"
-
-Block           := "{" StatementList "}"
-ExprStatement   := Expression ";"
-
-VarDec          := DataTypes IDENTIFIER ("=" Expression) ";"
-Assignment      := [IDENTIFIER "="]* Expression ";"
-
-Expression      := LogicalOr
-
-LogicalOr       := LogicalAnd ( "||" LogicalAnd )*
-LogicalAnd      := Equality ( "&&" Equality )*
-
-Equality        := Comparison ( ["==" | "!="] Comparison )*
-Comparison      := Term ( ["<" | ">" | "<=" | ">="] Term )*
-
-Term            := Factor ( ['+''-'] Factor )*
-Factor          := Primary ( ['*''/'] Primary )*
-Primary         := FuncCall | IDENTIFIER | NUM | '('E')' | "true" | "false"
-
-FuncCall        := IDENTIFIER ( "(" (Arguments) ")" )
-
-Arguments       := Expression ("," Expression)*
-DataTypes       := "short" | "int" | "long" | "char" | "void" | "float"
-
-IDENTIFIER      := TYPE_VARIABLE
-NUM             := TYPE_NUMBER
-*/
-
-/*!SECTION
-        if (((Token*)ListGet(tokens, *idx))->type == TOKEN_TYPE_VARIABLE) {
-            if (((Token*)ListGet(tokens, ListNext(tokens, *idx)))->type == TOKEN_TYPE_ASSIGNMENT) {
-                node2 = GetIdentifier(tokens, idx);
-                node1 = OP_(node1, node2, AST_ELEM_OPERATION_ASSIGNMENT);
-
-            } else {
-                // fprintf(stderr, "yes Code: %zu\n", token->type);
-                node2 = GetExpression(tokens, idx);
-                node1 = OP_(node1, node2, AST_ELEM_OPERATION_ASSIGNMENT);
-
-                break;
-            }
-        } else {
-            node2 = GetExpression(tokens, idx);
-            node1 = OP_(node1, node2, AST_ELEM_OPERATION_ASSIGNMENT);
-
-            break;
-            // assert(0); //FIXME - error handler
-        }
-*/

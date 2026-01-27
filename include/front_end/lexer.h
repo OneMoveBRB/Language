@@ -28,7 +28,7 @@ Statement       := VarDec                                                       
                  | ReturnStatement
                  | Block
                  | ExprStatement
-
+                 | Print
 
 IfStatement     := "if" "(" Expression ")" Block                                      //ANCHOR - done
                     ("else if" "(" Expression ")" Block)*
@@ -42,6 +42,8 @@ ExprStatement   := Expression ";"                                               
 VarDec          := DataTypes IDENTIFIER ("=" Expression) ";"                          //ANCHOR - done
 Assignment      := [IDENTIFIER "="]* Expression ";"                                   //ANCHOR - done
 
+Print           := "print" "(" Expression ")" ";"
+
 Expression      := LogicalOr                                                          //ANCHOR - done
 
 LogicalOr       := LogicalAnd ( "||" LogicalAnd )*                                    //ANCHOR - done
@@ -52,7 +54,15 @@ Comparison      := Term ( ["<" | ">" | "<=" | ">="] Term )*                     
 
 Term            := Factor ( ['+''-'] Factor )*                                        //ANCHOR - done
 Factor          := Primary ( ['*''/'] Primary )*                                      //ANCHOR - done
-Primary         := FuncCall | IDENTIFIER | NUM | "true" | "false" | '('Expression')'  //ANCHOR - done
+Primary         := FuncCall                                                           //ANCHOR - done
+                 | IDENTIFIER 
+                 | NUM 
+                 | Input
+                 | "true" 
+                 | "false" 
+                 | '('Expression')'
+
+Input           := "input" "("  ")"                                                   //ANCHOR - done
 
 FuncCall        := IDENTIFIER "(" (Arguments) ")"                                     //ANCHOR - done
 

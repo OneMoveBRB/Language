@@ -1,0 +1,5 @@
+#ifndef AST_OPTIMIZATION_H
+#define AST_OPTIMIZATION_H
+
+
+#endif /* AST_OPTIMIZATION_H */

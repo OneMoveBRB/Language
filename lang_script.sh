@@ -6,8 +6,8 @@ hash_table="HashTable/src/hash_table.c HashTable/src/hash_table_dump.c"
 buffer="../Buffer/src/buffer.c"
 
 front_end="src/front_end/front_end.c src/front_end/lexer.c src/front_end/syntax.c"
-ast="src/ast.c src/ast_dump.c"
-symbol_table="src/symbol_table.c src/symbol_table_dump.c"
+ast="src/ast/ast.c src/ast/ast_dump.c"
+symbol_table="src/symbol_table/symbol_table.c src/symbol_table/symbol_table_dump.c"
 io="src/io.c"
 
 mode_flag="-D _DEBUG"

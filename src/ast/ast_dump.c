@@ -1,10 +1,10 @@
-#include "../include/ast_dump.h"
+#include "../../include/ast/ast_dump.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
 
-#include "../include/io.h"
+#include "../../include/io.h"
 
 static size_t DotInitNodes(AST_Node* node, FILE* fp, size_t* node_cnt);
 
@@ -26,12 +26,18 @@ AST_OperationMapping ast_operation_dict[] = {
     {"*"     ,      AST_ELEM_OPERATION_MUL       },
     {"/"     ,      AST_ELEM_OPERATION_DIV       },
 
-    {"\\<"     ,      AST_ELEM_OPERATION_LT      },
-    {"\\>"     ,      AST_ELEM_OPERATION_GT      },
-    {"\\<="    ,      AST_ELEM_OPERATION_LE      },
-    {"\\>="    ,      AST_ELEM_OPERATION_GE      },
+    {"\\<"   ,      AST_ELEM_OPERATION_LT        },
+    {"\\>"   ,      AST_ELEM_OPERATION_GT        },
+    {"\\<="  ,      AST_ELEM_OPERATION_LE        },
+    {"\\>="  ,      AST_ELEM_OPERATION_GE        },
     {"=="    ,      AST_ELEM_OPERATION_EE        },
     {"!="    ,      AST_ELEM_OPERATION_NE        },
+
+    {"&&"    ,      AST_ELEM_OPERATION_LAND      },
+    {"||"    ,      AST_ELEM_OPERATION_LOR       },
+
+    {"input" ,      AST_ELEM_OPERATION_INPUT     },
+    {"print" ,      AST_ELEM_OPERATION_PRINT     },
 
     {"="     ,      AST_ELEM_OPERATION_ASSIGNMENT},
 

@@ -42,6 +42,9 @@ typedef enum TokenType {
     TOKEN_TYPE_LAND,   // &&
     TOKEN_TYPE_LOR,    // ||
 
+    TOKEN_TYPE_INPUT,
+    TOKEN_TYPE_PRINT,
+
     TOKEN_TYPE_ASSIGNMENT,
 
     TOKEN_TYPE_STATEMENT_IF,
@@ -90,7 +93,9 @@ typedef struct Token {
 
 typedef enum FrontEndErr_t {
     FRONT_END_OK,
-    FRONT_END_BUFFER_FAILED
+    FRONT_END_IO_FAILED,
+    FRONT_END_BUFFER_FAILED,
+    FRONT_END_LIST_FAILED
 } FrontEndErr_t;
 
 typedef struct AST AST;

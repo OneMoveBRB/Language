@@ -60,6 +60,12 @@ TokenTypeMapping reference_types[] = {
     {"=="    ,   TOKEN_TYPE_BIN_EE              },
     {"!="    ,   TOKEN_TYPE_BIN_NE              },
 
+    {"&&"    ,   TOKEN_TYPE_LAND                },
+    {"||"    ,   TOKEN_TYPE_LOR                 },
+
+    {"input" ,   TOKEN_TYPE_INPUT               },
+    {"print" ,   TOKEN_TYPE_PRINT               },
+
     {"="     ,   TOKEN_TYPE_ASSIGNMENT          },
 
     {"if"    ,  TOKEN_TYPE_STATEMENT_IF         },
