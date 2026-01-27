@@ -4,8 +4,8 @@
 #include <stdlib.h>
 #include <assert.h>
 
-#include "../../List/list.h"
-#include "../../../Buffer/include/buffer.h"
+#include "../../clibs/List/list.h"
+#include "../../clibs/Buffer/include/buffer.h"
 
 #include "../../include/ast/ast.h"
 #include "../../include/ast/ast_dump.h"

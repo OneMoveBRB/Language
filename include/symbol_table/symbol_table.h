@@ -5,8 +5,8 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include "../../../Stack/include/stack.h"
-#include "../../HashTable/include/hash_table.h"
+#include "../../clibs/Stack/include/stack.h"
+#include "../../clibs/HashTable/include/hash_table.h"
 
 typedef enum SymbolType {
     SYM_TYPE_VARIABLE,
@@ -64,11 +64,5 @@ SymbolData* SymbolTableLookUp(SymbolTable* table, const char* symbol_name);
 
 SymbolTableErr_t SymbolTableInsert(SymbolTable* table, const char* symbol_name,
                                    SymbolType symbol_type, DataType data_type, void* ast_node);
-
-/*
-    HashTable_t* global_scope;
-    List_t* func_scopes;
-    size_t  cur_func;
-*/
 
 #endif /* SYMBOL_TABLE_H */

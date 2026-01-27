@@ -18,7 +18,7 @@
     #define S_ISREG(m) (((m) & _S_IFMT) == _S_IFREG)
 #endif
 
-#include "../../Buffer/include/buffer.h"
+#include "../clibs/Buffer/include/buffer.h"
 
 IOErr_t BufferGet(Buffer_t* buffer, const char* file_name) {
     assert( buffer != NULL );

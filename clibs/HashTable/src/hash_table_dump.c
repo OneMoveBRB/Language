@@ -6,7 +6,7 @@
 #include <stdarg.h>
 #include <assert.h>
 
-#include "../../include/io.h"
+#include "../../../include/io.h"
 
 void DotVizualizeHashTable(const HashTable_t* table, const char* filename) {
     assert( table != NULL );

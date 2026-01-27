@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <assert.h>
 
-#include "../../List/list.h"
+#include "../../clibs/List/list.h"
 
 #include "../../include/ast/ast.h"
 #include "../../include/front_end/front_end.h"

@@ -1,9 +1,9 @@
 #!/bin/bash
 
-list="List/list.c List/list_private.c"
-stack="../Stack/src/stack.c ../Stack/src/stack_dump.c"
-hash_table="HashTable/src/hash_table.c HashTable/src/hash_table_dump.c"
-buffer="../Buffer/src/buffer.c"
+list="clibs/List/list.c clibs/List/list_private.c"
+stack="clibs/Stack/src/stack.c clibs/Stack/src/stack_dump.c"
+hash_table="clibs/HashTable/src/hash_table.c clibs/HashTable/src/hash_table_dump.c"
+buffer="clibs/Buffer/src/buffer.c"
 
 front_end="src/front_end/front_end.c src/front_end/lexer.c src/front_end/syntax.c"
 ast="src/ast/ast.c src/ast/ast_dump.c"
