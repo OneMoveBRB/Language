@@ -51,6 +51,8 @@ SymbolTableErr_t SymbolTableEnterScope(SymbolTable* table) {
         return SYM_TAB_HASH_TABLE_FAILED;
     }
 
+    new_scope->scope_ram_offset = (size_t)-1;
+
     if (new_scope->prev != NULL) {
         new_scope->level = new_scope->prev->level + 1;
     } else {
@@ -155,8 +157,9 @@ SymbolData* SymbolTableLookUp(SymbolTable* table, const char* symbol_name) {
     return NULL;
 }
 
-SymbolTableErr_t SymbolTableInsert(SymbolTable* table, const char* symbol_name,
-                                   SymbolType symbol_type, DataType data_type, void* ast_node) {
+SymbolTableErr_t SymbolTableInsert(SymbolTable* table,       const char* symbol_name,
+                                   SymbolType   symbol_type, DataType data_type, 
+                                   void*        ast_node,    size_t symbol_ram_offset) {
     assert( table != NULL );
     assert( symbol_name != NULL );
 
@@ -169,7 +172,8 @@ SymbolTableErr_t SymbolTableInsert(SymbolTable* table, const char* symbol_name,
         .symbol_type = symbol_type,
         .data_type = data_type,
         .scope_level = table->current_scope->level,
-        .ast_node = ast_node
+        .ast_node = ast_node,
+        .symbol_ram_offset = symbol_ram_offset
     };
 
     if (HashTableInsert(table->current_scope->symbols, symbol_name, strlen(symbol_name) + 1, 

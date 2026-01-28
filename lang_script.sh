@@ -8,11 +8,12 @@ buffer="clibs/Buffer/src/buffer.c"
 front_end="src/front_end/front_end.c src/front_end/lexer.c src/front_end/syntax.c"
 ast="src/ast/ast.c src/ast/ast_dump.c"
 symbol_table="src/symbol_table/symbol_table.c src/symbol_table/symbol_table_dump.c"
+back_end="src/back_end/back_end.c"
 io="src/io.c"
 
 mode_flag="-D _DEBUG"
 
-source="g++ main.c $front_end $ast $symbol_table $io $list $stack $hash_table $buffer -o lang"
+source="g++ main.c $front_end $ast $symbol_table $back_end $io $list $stack $hash_table $buffer -o lang"
 
 flags=" \
 $mode_flag -ggdb3 -std=c++17 -O0 -Wall -Wextra -Weffc++ -Waggressive-loop-optimizations -Wc++14-compat \

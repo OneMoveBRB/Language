@@ -206,3 +206,36 @@ AST_Node** GetParentNodePointer(AST_Node* node) {
     fprintf(stderr, "GetParentNodePointer failed!\n");
     return NULL;
 }
+
+// AST_Err_t AST_NodeCopyData
+/*
+AST_Node* AST_CopySubtree(AST_Node* cur_node, AST_Node* parent) {
+    assert( cur_node != NULL );
+
+    AST_Node* new_node = EmptyNodeInit;
+
+    if (cur_node->left != NULL) {
+        new_node->left = AST_CopySubtree(cur_node->left, new_node);
+    }
+    if (cur_node->right != NULL) {
+        new_node->right = AST_CopySubtree(cur_node->right, new_node);
+    }
+
+    new_node->parent = parent;
+    NodeCopyData(new_node, cur_node);
+
+    fprintf(stderr, "%p\n", cur_node);
+    return new_node;
+}
+
+TreeErr_t TreeDeleteSubtree(Tree_t* tree, AST_Node* node) {
+    assert( tree != NULL );
+    assert( node != NULL );
+
+    size_t cnt_of_del_nodes = PostorderTraversal(node, NodeDestroy);
+
+    tree->size -= cnt_of_del_nodes;
+
+    return TREE_OK;
+}
+*/

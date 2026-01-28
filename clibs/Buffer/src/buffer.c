@@ -52,6 +52,8 @@ BufferErr_t BufferRealloc(Buffer_t* buffer, size_t new_capacity) {
     buffer->capacity = new_capacity;
     buffer->data = new_data;
 
+    memset(BUFFER_IDX(buffer->capacity - 1), 0, buffer->element_size);
+
     return BUFFER_OK;
 }
 
@@ -90,6 +92,22 @@ BufferErr_t BufferRead(Buffer_t* buffer, size_t count, FILE* fp) {
     memset(BUFFER_IDX(count), 0, buffer->element_size);
     buffer->size = count + 1;
     
+    return BUFFER_OK;
+}
+
+BufferErr_t BufferPush(Buffer_t* buffer, const void* source, size_t count) {
+    assert( buffer != NULL );
+    assert( source != NULL );
+    assert( count % buffer->element_size == 0 );
+
+    size_t offset = count / buffer->element_size;
+    if (buffer->size + offset + 1 >= buffer->capacity) {
+        BufferRealloc(buffer, buffer->capacity + 2*offset + 2);
+    }
+
+    memcpy(BUFFER_IDX(buffer->size), source, count);
+    buffer->size += offset;
+
     return BUFFER_OK;
 }
 

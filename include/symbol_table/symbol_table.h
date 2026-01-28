@@ -29,9 +29,11 @@ typedef struct SymbolData {
     DataType     data_type;
     unsigned int scope_level;
     void*        ast_node;
+    size_t       symbol_ram_offset;
 } SymbolData;
 
 typedef struct Scope {
+    size_t        scope_ram_offset;
     unsigned int  level;
     HashTable_t*  symbols;
     struct Scope* prev;
@@ -62,7 +64,8 @@ SymbolTableErr_t SymbolTableDelBranch(SymbolTable* table);
 SymbolData* SymbolTableLookUpCurrentScope(SymbolTable* table, const char* symbol_name);
 SymbolData* SymbolTableLookUp(SymbolTable* table, const char* symbol_name);
 
-SymbolTableErr_t SymbolTableInsert(SymbolTable* table, const char* symbol_name,
-                                   SymbolType symbol_type, DataType data_type, void* ast_node);
+SymbolTableErr_t SymbolTableInsert(SymbolTable* table,       const char* symbol_name,
+                                   SymbolType   symbol_type, DataType data_type, 
+                                   void*        ast_node,    size_t symbol_ram_offset);
 
 #endif /* SYMBOL_TABLE_H */

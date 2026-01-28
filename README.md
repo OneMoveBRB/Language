@@ -158,3 +158,57 @@ int main() {
 }
 ```
 ![example](/ast_standart/example.svg)
+
+
+# Backend
+
+## AssemblyCodeGeneration
+
+### Boolean Expressions
+Two parameters accepted by binary relations of the form
+* <
+* \>
+* ==
+* !=
+
+are replaced on the stack by 1 or 0 with jumps.
+
+Example:
+```
+2 < 3
+```
+should look like this
+```x86asm
+PUSH 2
+PUSH 3
+JBE false_comparison_result
+PUSH 1
+JMP truth_comparison_result
+:   false_comparison_result
+PUSH 0
+:   truth_comparison_result
+```
+
+If boolean expression consists only of a number, then this number is replaced by
+* 1, number >= 1
+* 0, number < 1
+
+Example:
+```
+2
+```
+should look like this
+```x86asm
+PUSH 2
+PUSH 1
+JA false_comparison_result
+PUSH 1
+JMP truth_comparison_result
+:   false_comparison_result
+PUSH 0
+:   truth_comparison_result
+```
+
+Land and Lor will be checked using indicator functions:
+* a && b <=> I(a) * I(b)
+* a || b <=> I(a) + I(b) - I(a) * I(b)

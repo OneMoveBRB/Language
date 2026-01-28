@@ -86,6 +86,7 @@ size_t LexicalAnalysis(const char* s, List_t* tokens) {
     const char* left_ptr = s;
 
     while (*s != '\0') {
+
         char flag = 0;
 
         /* Comments check */

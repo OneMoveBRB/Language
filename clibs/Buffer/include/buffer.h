@@ -21,5 +21,6 @@ BufferErr_t BufferRealloc(Buffer_t* buffer, size_t new_capacity);
 BufferErr_t BufferDestroy(Buffer_t** buffer_ptr);
 
 BufferErr_t BufferRead(Buffer_t* buffer, size_t count, FILE* fp);
+BufferErr_t BufferPush(Buffer_t* buffer, const void* source, size_t count);
 
 #endif /* BUFFER_H */

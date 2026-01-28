@@ -1,0 +1,49 @@
+int factorial(int n) {
+    if (n == 1) {
+        return 1;
+    }
+
+    return n * factorial(n - 1);
+}
+
+int main() {
+    print(factorial(5));
+    return 0;
+}
+
+: factorial
+
+PUSH 0
+POPR RAX
+POPM [RAX] ; n
+
+: begif_1
+
+PUSH 1
+PUSHM [RAX] ; n
+
+JNE endif_1
+
+PUSH 1
+RET
+
+: endif_1
+
+PUSHM [RAX]
+PUSHM [RAX]
+PUSH 1
+SUB
+CALL factorial
+MUL
+RET 
+
+
+MAIN
+
+PUSH 4
+CALL factorial
+OUT
+
+PUSH 0
+
+HLT
