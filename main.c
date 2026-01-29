@@ -11,7 +11,7 @@ int main() {
 
     FrontEnd(&ast, file_name);
 
-    // CodeGeneration(ast);
+    CodeGeneration(ast);
 
     AST_Destroy(&ast);
 

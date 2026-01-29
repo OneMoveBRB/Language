@@ -60,7 +60,7 @@ NUM             := TYPE_NUMBER
 is the polytree (directed tree) consisting of scopes (nodes). Global scope - the root, last nested scopes - leaves (pointers to them are located in an additional stack).
 Each scope consists HashTable of symbols. Branches related to functions declared globally can extend from the root (there can't be nested functions).
 
-![assignment](/img_sym_tab.svg)
+![assignment](img_sym_tab.svg)
 
 # AST standart
 
@@ -68,18 +68,18 @@ Each scope consists HashTable of symbols. Branches related to functions declared
 ```c
 x = y = z = expr;
 ```
-![assignment](/ast_standart/assignment.svg)
+![assignment](docs/ast_standart/assignment.svg)
 
 ## Variable Declaration
 ```c
 int x = expr;
 ```
-![vardec1](/ast_standart/vardec1.svg)
+![vardec1](docs/ast_standart/vardec1.svg)
 
 ```c
 int x;
 ```
-![vardec2](/ast_standart/vardec2.svg)
+![vardec2](docs/ast_standart/vardec2.svg)
 
 ## Functions
 
@@ -87,19 +87,19 @@ int x;
 ```c
 int func(int a, char b) {...}
 ```
-![function_declaration](/ast_standart/func_dec.svg)
+![function_declaration](docs/ast_standart/func_dec.svg)
 
 ### Function Call
 ```c
 func(args)
 ```
-![function_call](/ast_standart/func_call.svg)
+![function_call](docs/ast_standart/func_call.svg)
 
 ### Return Statement
 ```c
 return expr;
 ```
-![return_statement](/ast_standart/return_statement.svg)
+![return_statement](docs/ast_standart/return_statement.svg)
 
 ## Loops
 
@@ -109,7 +109,7 @@ while (cond) {
   body;
 }
 ```
-![while_statement](/ast_standart/while_statement.svg)
+![while_statement](docs/ast_standart/while_statement.svg)
 
 ## Conditional operators
 
@@ -123,7 +123,7 @@ if (cond) {
   body;
 }
 ```
-![if_statement](/ast_standart/if_statement.svg)
+![if_statement](docs/ast_standart/if_statement.svg)
 
 ## Mark Nodes
 
@@ -157,14 +157,128 @@ int main() {
     return 0;
 }
 ```
-![example](/ast_standart/example.svg)
+![example](docs/ast_standart/syntax_tree_example.svg)
 
 
 # Backend
 
-## AssemblyCodeGeneration
+## Assembly Code Generation
+Обход AST выполняется в прямом порядке следования инструкций написанной пользователем программы, генерируя ассемблерный код.
 
-### Boolean Expressions
+В SPU хранятся 3 регистра: RAX, RBX, RCX.
+
+В ассемблерном коде RAX
+* является указателем на свободный кусок RAM
+* используется для сохранения/удаления данных в RAM.
+
+
+### The order of filling RAM.
+RAM заполняется последовательно слева направо с помощью RAX:
+```c
+int x = 86;
+```
+```x86asm
+PUSH 86
+POPM [RAX]
+CALL move_rax_by_one
+```
+
+
+Так как при обходе AST текущее значение RAX неизвестно, необходимо при входе в функцию запомнить начальное значение RAX во втором регистре RBX и инициализировать счётчик относительного смещения RAX в RAM для сохранения переменных в символьной таблице и последующего взаимодействия с ними в ассемблерном коде.
+
+Для доступа к переменной в RAM используется RCX:
+```c
+x;
+```
+```x86asm
+: set_rcx_offset
+PUSHR RBX
+ADD
+POPR RCX
+RET
+
+: get_rax_by_offset
+CALL set_rcx_offset
+PUSHM [RCX]
+RET
+
+PUSH 1                  ; rax_offset for x
+CALL get_rax_by_offset
+```
+Для каждой переменной значение относительного смещения RAX в RAM на момент её инициализации хранится в символьной таблице.
+
+Представление в RAM перехода в функцию:
+
+![filling_ram](docs/filling_ram2.gif)
+
+То есть перед вызовом функции
+* сохраняется значение RBX в RAM[RAX] для того, чтобы можно было вернуть RBX в предыдущее состояние (после выхода из функции)
+* RBX = RAX
+* RAX++ 
+
+Перед выходом из функции
+* RAX = RBX
+* RBX = RAM[RBX]
+
+Пример:
+```c
+int f(int n) {
+  return 0;
+}
+
+int main() {
+  f(86);
+
+  return 0;
+}
+```
+```x86asm
+JMP main
+
+: move_rax_by_one
+PUSH 1
+PUSHR RAX
+ADD
+POPR RAX
+RET
+
+: enter_scope
+PUSHR RBX
+POPM [RAX]
+PUSHR RAX
+POPR  RBX
+CALL move_rax_by_one
+RET
+
+: exit_scope
+PUSHR  RBX
+POPR   RAX
+PUSHM [RBX]
+POPR   RBX
+RET
+
+: main
+PUSH 0                ; RAX init
+POPR RAX
+
+PUSH 0
+POPR RBX              ; RBX init
+
+PUSH 0
+POPR RCX              ; RCX init
+
+PUSH 86
+CALL enter_scope
+CALL func
+
+CALL exit_scope
+PUSH 0
+RET
+
+HLT
+```
+
+### Boolean Expressions Handler
 Two parameters accepted by binary relations of the form
 * <
 * \>
@@ -174,7 +288,7 @@ Two parameters accepted by binary relations of the form
 are replaced on the stack by 1 or 0 with jumps.
 
 Example:
-```
+```c
 2 < 3
 ```
 should look like this
@@ -194,7 +308,7 @@ If boolean expression consists only of a number, then this number is replaced by
 * 0, number < 1
 
 Example:
-```
+```c
 2
 ```
 should look like this
@@ -212,3 +326,29 @@ PUSH 0
 Land and Lor will be checked using indicator functions:
 * a && b <=> I(a) * I(b)
 * a || b <=> I(a) + I(b) - I(a) * I(b)
+
+........................................................................................................................................................................................
+### Scope Handler
+Так как при заходе в вершину функции AST текущее значение RAX неизвестно, инициализируется относительное смещение RAX в RAM (cur_rax_offset = 0), необходимое для сохранения переменных в символьной таблице и последующего взаимодействия с ними в ассемблерном коде.
+
+При заходе в новую область видимости в ScopeData символьной таблицы сохраняется текущее относительное смещение RAX в RAM (оно будет начальным для нового scope). Это необходимо, чтобы при выходе из области видимости освободить место объявленных локально переменных в RAM.
+
+При выходе из области видимости 
+
+
+### Initialization Handler
+Инициализация переменной с присваиванием:
+```c
+int x = 10;
+```
+```x86asm
+PUSH 10
+PUSH 8  ; cur_rax_offset
+PUSH RAX
+POPR RAX
+```
+
+
+### Keeping Variables
+
+

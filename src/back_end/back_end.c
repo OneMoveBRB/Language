@@ -5,8 +5,15 @@
 
 #include "../../include/ast/ast.h"
 #include "../../include/symbol_table/symbol_table.h"
+#include "../../include/symbol_table/symbol_table_dump.h"
 #include "../../clibs/Buffer/include/buffer.h"
-
+/*
+typedef struct AssemblyCodeSetup {
+    Buffer_t* assembly_code;
+    size_t if_cnt;
+    size_t while_cnt;
+} AssemblyCodeSetup;
+*/
 typedef struct BackEnd {
     AST* ast;
     SymbolTable* symbol_table;
@@ -14,12 +21,30 @@ typedef struct BackEnd {
     Buffer_t* assembly_code;
     size_t if_cnt;
     size_t while_cnt;
+    size_t bool_cnt;
     size_t cur_ram_offset;
 } BackEnd;
 
-const int MAX_LEN = 128;
+const int MAX_LEN = 256;
+
+const char* bool_cmp =  " false_comparison_result#\n"
+                        "PUSH 1\n"
+                        "JMP truth_comparison_result#\n"
+                        ":   false_comparison_result#\n"
+                        "PUSH 0\n"
+                        ":   truth_comparison_result#\n\n";
+
+const char* unary_bool_cmp = "PUSH 1\n"
+                             "JA false_comparison_result#\n"
+                             "PUSH 1\n"
+                             "JMP truth_comparison_result#\n"
+                             ":   false_comparison_result#\n"
+                             "PUSH 0\n"
+                             ":   truth_comparison_result#\n\n";
 
 static BackEndErr_t AssemblyCodeGeneration(BackEnd* backend);
+
+static BackEndErr_t AST_NodeHandler(AST_Node* node, BackEnd* backend);
 
 static BackEndErr_t SentinelHandler(AST_Node* node, BackEnd* backend);
 
@@ -42,7 +67,9 @@ static BackEndErr_t LorHandler(AST_Node* node, BackEnd* backend);
 
 static BackEndErr_t ConstHandler(AST_Node* node, BackEnd* backend);
 static BackEndErr_t VariableHandler(AST_Node* node, BackEnd* backend);
-//FIXME - do different boolean checking
+
+char* CntLabel(const char* s, size_t cnt);
+
 BackEndErr_t CodeGeneration(AST* ast) {
     assert( ast != NULL );
 
@@ -64,15 +91,14 @@ BackEndErr_t CodeGeneration(AST* ast) {
         .assembly_code = assembly_code,
         .if_cnt = 0,
         .while_cnt = 0,
+        .bool_cnt = 0,
         .cur_ram_offset = 0
     };
 
+    // here your code
     AssemblyCodeGeneration(&back_end);
 
     printf("%s", (char*)back_end.assembly_code->data);
-    // for (size_t i = 0; i < back_end.assembly_code->capacity; i++) {
-    //     printf("%c", *((char*)back_end.assembly_code->data + i));
-    // }
 
     SymbolTableDestroy(&back_end.symbol_table);
     BufferDestroy(&back_end.assembly_code);
@@ -84,8 +110,6 @@ static BackEndErr_t AssemblyCodeGeneration(BackEnd* backend) {
     assert( backend != NULL );
 
     backend->symbol_table->global_scope->scope_ram_offset = 0;
-    // backend->cur_ram_offset = 0;
-    // backend->scope_level = (unsigned int)-1;
 
     Buffer_t* assembly_code = backend->assembly_code;
     const char* regs_init = "PUSH 0\n"
@@ -100,11 +124,12 @@ static BackEndErr_t AssemblyCodeGeneration(BackEnd* backend) {
 
     // test
     fprintf(stderr, "Code: %d\n", ExpressionHandler(backend->ast->root->left, backend));
+    // AST_NodeHandler(backend->ast->root, backend);
 
     return BACK_END_OK;
 }
 
-BackEndErr_t AST_NodeHandler(AST_Node* node, BackEnd* backend) {
+static BackEndErr_t AST_NodeHandler(AST_Node* node, BackEnd* backend) {
     assert( node    != NULL );
     assert( backend != NULL );
 
@@ -114,15 +139,25 @@ BackEndErr_t AST_NodeHandler(AST_Node* node, BackEnd* backend) {
     } else if (node->type == AST_ELEM_TYPE_VARIABLE) {
         VariableHandler(node, backend);
     }
+
+    return BACK_END_OK;
 }
 
 static BackEndErr_t SentinelHandler(AST_Node* node, BackEnd* backend) {
     assert( node    != NULL );
     assert( backend != NULL );
 
+    // if (backend->symbol_table->current_scope != backend->symbol_table->global_scope 
+    //     && (backend->symbol_table->current_scope != NULL)) {
+    //     DotVizualizeSymbolTable(backend->symbol_table, "sym_tab.txt");
+    //     getchar();
+    // }
+
     if (node->right == NULL) {
         SymbolTableExitScope(backend->symbol_table);
-        backend->cur_ram_offset = backend->symbol_table->current_scope->scope_ram_offset;
+        if (backend->symbol_table->current_scope != NULL) {
+            backend->cur_ram_offset = backend->symbol_table->current_scope->scope_ram_offset;
+        }
 
         return BACK_END_OK;
     }
@@ -226,6 +261,8 @@ static BackEndErr_t ExpressionHandler(AST_Node* node, BackEnd* backend) {
     return BACK_END_ERROR;
 }
 
+// ================================ MATH HANDLER ================================
+
 static BackEndErr_t AddHandler(AST_Node* node, BackEnd* backend) {
     assert( node    != NULL );
     assert( backend != NULL );
@@ -311,14 +348,15 @@ static BackEndErr_t LTHandler(AST_Node* node, BackEnd* backend) {
     ExpressionHandler(node->left, backend);
     ExpressionHandler(node->right, backend);
 
-    const char* jb_cmp = "JBE false_comparison_result\n"
-                         "PUSH 1\n"
-                         "JMP truth_comparison_result\n"
-                         ":   false_comparison_result\n"
-                         "PUSH 0\n"
-                         ":   truth_comparison_result\n\n";
+    const char* jbe = "JBE";
+    
+    char* cnt_bool_cmp = CntLabel(bool_cmp, backend->bool_cnt);
+    backend->bool_cnt++;
 
-    BufferPush(backend->assembly_code, jb_cmp, strlen(jb_cmp));
+    BufferPush(backend->assembly_code, jbe, strlen(jbe));
+    BufferPush(backend->assembly_code, cnt_bool_cmp, strlen(cnt_bool_cmp));
+
+    FREE(cnt_bool_cmp);
 
     return BACK_END_OK;
 }
@@ -334,14 +372,15 @@ static BackEndErr_t LEHandler(AST_Node* node, BackEnd* backend) {
     ExpressionHandler(node->left, backend);
     ExpressionHandler(node->right, backend);
 
-    const char* jbe_cmp = "JB false_comparison_result\n"
-                         "PUSH 1\n"
-                         "JMP truth_comparison_result\n"
-                         ":   false_comparison_result\n"
-                         "PUSH 0\n"
-                         ":   truth_comparison_result\n\n";
+    const char* jb = "JB";
+    
+    char* cnt_bool_cmp = CntLabel(bool_cmp, backend->bool_cnt);
+    backend->bool_cnt++;
 
-    BufferPush(backend->assembly_code, jbe_cmp, strlen(jbe_cmp));
+    BufferPush(backend->assembly_code, jb, strlen(jb));
+    BufferPush(backend->assembly_code, cnt_bool_cmp, strlen(cnt_bool_cmp));
+
+    FREE(cnt_bool_cmp);
 
     return BACK_END_OK;
 }
@@ -357,14 +396,15 @@ static BackEndErr_t GTHandler(AST_Node* node, BackEnd* backend) {
     ExpressionHandler(node->left, backend);
     ExpressionHandler(node->right, backend);
 
-    const char* ja_cmp = "JAE false_comparison_result\n"
-                         "PUSH 1\n"
-                         "JMP truth_comparison_result\n"
-                         ":   false_comparison_result\n"
-                         "PUSH 0\n"
-                         ":   truth_comparison_result\n\n";
+    const char* jae = "JAE";
+    
+    char* cnt_bool_cmp = CntLabel(bool_cmp, backend->bool_cnt);
+    backend->bool_cnt++;
 
-    BufferPush(backend->assembly_code, ja_cmp, strlen(ja_cmp));
+    BufferPush(backend->assembly_code, jae, strlen(jae));
+    BufferPush(backend->assembly_code, cnt_bool_cmp, strlen(cnt_bool_cmp));
+
+    FREE(cnt_bool_cmp);
 
     return BACK_END_OK;
 }
@@ -379,15 +419,16 @@ static BackEndErr_t GEHandler(AST_Node* node, BackEnd* backend) {
 
     ExpressionHandler(node->left, backend);
     ExpressionHandler(node->right, backend);
+    
+    const char* ja = "JA";
+    
+    char* cnt_bool_cmp = CntLabel(bool_cmp, backend->bool_cnt);
+    backend->bool_cnt++;
 
-    const char* jae_cmp = "JA false_comparison_result\n"
-                         "PUSH 1\n"
-                         "JMP truth_comparison_result\n"
-                         ":   false_comparison_result\n"
-                         "PUSH 0\n"
-                         ":   truth_comparison_result\n\n";
+    BufferPush(backend->assembly_code, ja, strlen(ja));
+    BufferPush(backend->assembly_code, cnt_bool_cmp, strlen(cnt_bool_cmp));
 
-    BufferPush(backend->assembly_code, jae_cmp, strlen(jae_cmp));
+    FREE(cnt_bool_cmp);
 
     return BACK_END_OK;
 }
@@ -403,14 +444,15 @@ static BackEndErr_t EEHandler(AST_Node* node, BackEnd* backend) {
     ExpressionHandler(node->left, backend);
     ExpressionHandler(node->right, backend);
 
-    const char* je_cmp = "JNE false_comparison_result\n"
-                         "PUSH 1\n"
-                         "JMP truth_comparison_result\n"
-                         ":   false_comparison_result\n"
-                         "PUSH 0\n"
-                         ":   truth_comparison_result\n\n";
+    const char* jne = "JNE";
+    
+    char* cnt_bool_cmp = CntLabel(bool_cmp, backend->bool_cnt);
+    backend->bool_cnt++;
 
-    BufferPush(backend->assembly_code, je_cmp, strlen(je_cmp));
+    BufferPush(backend->assembly_code, jne, strlen(jne));
+    BufferPush(backend->assembly_code, cnt_bool_cmp, strlen(cnt_bool_cmp));
+
+    FREE(cnt_bool_cmp);
 
     return BACK_END_OK;
 }
@@ -426,14 +468,15 @@ static BackEndErr_t NEHandler(AST_Node* node, BackEnd* backend) {
     ExpressionHandler(node->left, backend);
     ExpressionHandler(node->right, backend);
 
-    const char* jne_cmp = "JE false_comparison_result\n"
-                         "PUSH 1\n"
-                         "JMP truth_comparison_result\n"
-                         ":   false_comparison_result\n"
-                         "PUSH 0\n"
-                         ":   truth_comparison_result\n\n";
+    const char* je = "JE";
+    
+    char* cnt_bool_cmp = CntLabel(bool_cmp, backend->bool_cnt);
+    backend->bool_cnt++;
 
-    BufferPush(backend->assembly_code, jne_cmp, strlen(jne_cmp));
+    BufferPush(backend->assembly_code, je, strlen(je));
+    BufferPush(backend->assembly_code, cnt_bool_cmp, strlen(cnt_bool_cmp));
+
+    FREE(cnt_bool_cmp);
 
     return BACK_END_OK;
 }
@@ -444,15 +487,12 @@ static BackEndErr_t LandHandler(AST_Node* node, BackEnd* backend) {
 
     MulHandler(node, backend);
 
-    const char* bool_cmp = "PUSH 1\n"
-                           "JA false_comparison_result\n"
-                           "PUSH 1\n"
-                           "JMP truth_comparison_result\n"
-                           ":   false_comparison_result\n"
-                           "PUSH 0\n"
-                           ":   truth_comparison_result\n\n";
+    char* cnt_bool_cmp = CntLabel(unary_bool_cmp, backend->bool_cnt);
+    backend->bool_cnt++;
 
-    BufferPush(backend->assembly_code, bool_cmp, strlen(bool_cmp));
+    BufferPush(backend->assembly_code, cnt_bool_cmp, strlen(cnt_bool_cmp));
+
+    FREE(cnt_bool_cmp);
 
     return BACK_END_OK;
 }
@@ -463,17 +503,16 @@ static BackEndErr_t LorHandler(AST_Node* node, BackEnd* backend) {
 
     AddHandler(node, backend);
     MulHandler(node, backend);
-    SubHandler(node, backend);
+    
+    const char* sub = "SUB\n";
 
-    const char* bool_cmp = "PUSH 1\n"
-                           "JA false_comparison_result\n"
-                           "PUSH 1\n"
-                           "JMP truth_comparison_result\n"
-                           ":   false_comparison_result\n"
-                           "PUSH 0\n"
-                           ":   truth_comparison_result\n\n";
+    char* cnt_bool_cmp = CntLabel(unary_bool_cmp, backend->bool_cnt);
+    backend->bool_cnt++;
 
-    BufferPush(backend->assembly_code, bool_cmp, strlen(bool_cmp));
+    BufferPush(backend->assembly_code, sub, strlen(sub));
+    BufferPush(backend->assembly_code, cnt_bool_cmp, strlen(cnt_bool_cmp));
+
+    FREE(cnt_bool_cmp);
 
     return BACK_END_OK;
 }
@@ -519,4 +558,30 @@ static BackEndErr_t VariableHandler(AST_Node* node, BackEnd* backend) {
     BufferPush(backend->assembly_code, temp_buffer, strlen(temp_buffer));
 
     return BACK_END_OK;
+}
+
+char* CntLabel(const char* s, size_t cnt) {
+    assert(s != NULL);
+    
+    char num_buffer[32];
+    int num_len = snprintf(num_buffer, sizeof(num_buffer), "_%zu", cnt);
+    
+    char* str_buffer = (char*)calloc(MAX_LEN, sizeof(char));
+    if (str_buffer == NULL) { 
+        return NULL;
+    }
+    
+    char* dest = str_buffer;
+    while (*s) {
+        if (*s == '#') {
+            memcpy(dest, num_buffer, (size_t)num_len);
+            dest += num_len;
+        } else {
+            *dest++ = *s;
+        }
+        s++;
+    }
+    *dest = '\0';
+    
+    return str_buffer;
 }

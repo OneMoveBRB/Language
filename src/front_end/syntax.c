@@ -987,3 +987,80 @@ static AST_Node* GetNumber(List_t* tokens, size_t* idx) {
     assert(0);
     return NULL;
 }
+
+
+// [] - выполняется точно 1 раз
+// () - выполняется 0 или 1 раз
+// []* - выполняется >= 1 раз
+// ()* - выполняется >= 0 раз
+
+/*
+Program         := (FuncDec | StatementList) "!END_TOKEN!"
+
+FuncDec         := DataTypes IDENTIFIER "(" (Parameters) ")" [Block | ";"]
+Parameters      := DataTypes IDENTIFIER ("," DataTypes IDENTIFIER)*
+
+StatementList   := [Statement]*
+Statement       := VarDec
+                 | Assignment
+                 | IfStatement
+                 | WhileStatement
+                 | ReturnStatement
+                 | Block
+                 | ExprStatement
+
+
+IfStatement     := "if" "(" Expression ")" Block
+                    ("else if" "(" Expression ")" Block)*
+                    ("else" Block)
+WhileStatement  := "while" "(" Expression ")" Block
+ReturnStatement := "return" Expression ";"
+
+Block           := "{" StatementList "}"
+ExprStatement   := Expression ";"
+
+VarDec          := DataTypes IDENTIFIER ("=" Expression) ";"
+Assignment      := [IDENTIFIER "="]* Expression ";"
+
+Expression      := LogicalOr
+
+LogicalOr       := LogicalAnd ( "||" LogicalAnd )*
+LogicalAnd      := Equality ( "&&" Equality )*
+
+Equality        := Comparison ( ["==" | "!="] Comparison )*
+Comparison      := Term ( ["<" | ">" | "<=" | ">="] Term )*
+
+Term            := Factor ( ['+''-'] Factor )*
+Factor          := Primary ( ['*''/'] Primary )*
+Primary         := FuncCall | IDENTIFIER | NUM | '('E')' | "true" | "false"
+
+FuncCall        := IDENTIFIER ( "(" (Arguments) ")" )
+
+Arguments       := Expression ("," Expression)*
+DataTypes       := "short" | "int" | "long" | "char" | "void" | "float"
+
+IDENTIFIER      := TYPE_VARIABLE
+NUM             := TYPE_NUMBER
+*/
+
+/*!SECTION
+        if (((Token*)ListGet(tokens, *idx))->type == TOKEN_TYPE_VARIABLE) {
+            if (((Token*)ListGet(tokens, ListNext(tokens, *idx)))->type == TOKEN_TYPE_ASSIGNMENT) {
+                node2 = GetIdentifier(tokens, idx);
+                node1 = OP_(node1, node2, AST_ELEM_OPERATION_ASSIGNMENT);
+
+            } else {
+                // fprintf(stderr, "yes Code: %zu\n", token->type);
+                node2 = GetExpression(tokens, idx);
+                node1 = OP_(node1, node2, AST_ELEM_OPERATION_ASSIGNMENT);
+
+                break;
+            }
+        } else {
+            node2 = GetExpression(tokens, idx);
+            node1 = OP_(node1, node2, AST_ELEM_OPERATION_ASSIGNMENT);
+
+            break;
+            // assert(0); //FIXME - error handler
+        }
+*/
