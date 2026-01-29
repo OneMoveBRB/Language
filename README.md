@@ -177,7 +177,7 @@ RAM заполняется последовательно слева напра�
 ```c
 int x = 86;
 ```
-```x86asm
+```asm
 PUSH 86
 POPM [RAX]
 CALL move_rax_by_one
@@ -190,7 +190,7 @@ CALL move_rax_by_one
 ```c
 x;
 ```
-```x86asm
+```asm
 : set_rcx_offset
 PUSHR RBX
 ADD
@@ -232,7 +232,7 @@ int main() {
   return 0;
 }
 ```
-```x86asm
+```asm
 JMP main
 
 : move_rax_by_one
@@ -292,7 +292,7 @@ Example:
 2 < 3
 ```
 should look like this
-```x86asm
+```asm
 PUSH 2
 PUSH 3
 JBE false_comparison_result
@@ -312,7 +312,7 @@ Example:
 2
 ```
 should look like this
-```x86asm
+```asm
 PUSH 2
 PUSH 1
 JA false_comparison_result
@@ -341,7 +341,7 @@ Land and Lor will be checked using indicator functions:
 ```c
 int x = 10;
 ```
-```x86asm
+```asm
 PUSH 10
 PUSH 8  ; cur_rax_offset
 PUSH RAX
