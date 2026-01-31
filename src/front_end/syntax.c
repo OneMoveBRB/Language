@@ -83,16 +83,19 @@ static AST_Node* GetG(List_t* tokens, size_t *idx) {
     assert( tokens != NULL );
     assert( idx != NULL );
 
-    AST_Node* node = SENTINEL;
-    AST_Node* statement = node;
+    AST_Node* node = NULL;
+    AST_Node* statement = GetGlobal(tokens, idx);
 
-    while (( statement->left = GetGlobal(tokens, idx) ) != NULL) {
-        statement->right = SENTINEL;
+    assert( statement != NULL ); //FIXME - error handler (scope must have at least 1 instruction)
 
-        statement->left->parent = statement;
-        statement->right->parent = statement;
+    node = OP_(statement, NULL, AST_ELEM_OPERATION_SENTINEL);
 
-        statement = statement->right;
+    AST_Node* cur_sentinel = node;
+    while (( statement = GetGlobal(tokens, idx) ) != NULL) {
+        cur_sentinel->right = AST_NodeInit(cur_sentinel, statement, NULL, 
+                                            AST_ELEM_TYPE_OPERATION, AST_ELEM_OPERATION_SENTINEL);
+        
+        cur_sentinel = cur_sentinel->right;
     }
 
     Token* token = (Token*)ListGet(tokens, *idx);
@@ -421,16 +424,42 @@ static AST_Node* GetBlock(List_t* tokens, size_t* idx) {
 
     *idx = ListNext(tokens, *idx);
 
-    AST_Node* block = SENTINEL;
-    AST_Node* statement = block;
+    AST_Node* block = NULL;
+    AST_Node* statement = GetStatement(tokens, idx);
 
-    while (( statement->left = GetStatement(tokens, idx) ) != NULL) {
-        statement->right = SENTINEL;
+    assert( statement != NULL ); //FIXME - error handler (scope must have at least 1 instruction)
 
-        statement->left->parent = statement;
-        statement->right->parent = statement;
+    char is_return = 0;
+    if (    statement->type == AST_ELEM_TYPE_OPERATION 
+         && statement->data.operation == AST_ELEM_OPERATION_RETURN) {
 
-        statement = statement->right;
+        block = statement;
+        is_return = 1;
+        
+    } else {
+        block = OP_(statement, NULL, AST_ELEM_OPERATION_SENTINEL);
+    }
+
+    AST_Node* cur_sentinel = block;
+    while (( statement = GetStatement(tokens, idx) ) != NULL) {
+        if (is_return) {
+            PostorderTraversal(statement, AST_NodeDestroy); // skip all nodes after return
+            continue;
+        }
+        if (    statement->type == AST_ELEM_TYPE_OPERATION 
+             && statement->data.operation == AST_ELEM_OPERATION_RETURN) {
+            
+            cur_sentinel->right = statement;
+            statement->parent = cur_sentinel;
+
+            is_return = 1;
+
+        } else {
+            cur_sentinel->right = AST_NodeInit(cur_sentinel, statement, NULL, 
+                                               AST_ELEM_TYPE_OPERATION, AST_ELEM_OPERATION_SENTINEL);
+        }
+        
+        cur_sentinel = cur_sentinel->right;
     }
 
     token = (Token*)ListGet(tokens, *idx);
@@ -987,80 +1016,3 @@ static AST_Node* GetNumber(List_t* tokens, size_t* idx) {
     assert(0);
     return NULL;
 }
-
-
-// [] - выполняется точно 1 раз
-// () - выполняется 0 или 1 раз
-// []* - выполняется >= 1 раз
-// ()* - выполняется >= 0 раз
-
-/*
-Program         := (FuncDec | StatementList) "!END_TOKEN!"
-
-FuncDec         := DataTypes IDENTIFIER "(" (Parameters) ")" [Block | ";"]
-Parameters      := DataTypes IDENTIFIER ("," DataTypes IDENTIFIER)*
-
-StatementList   := [Statement]*
-Statement       := VarDec
-                 | Assignment
-                 | IfStatement
-                 | WhileStatement
-                 | ReturnStatement
-                 | Block
-                 | ExprStatement
-
-
-IfStatement     := "if" "(" Expression ")" Block
-                    ("else if" "(" Expression ")" Block)*
-                    ("else" Block)
-WhileStatement  := "while" "(" Expression ")" Block
-ReturnStatement := "return" Expression ";"
-
-Block           := "{" StatementList "}"
-ExprStatement   := Expression ";"
-
-VarDec          := DataTypes IDENTIFIER ("=" Expression) ";"
-Assignment      := [IDENTIFIER "="]* Expression ";"
-
-Expression      := LogicalOr
-
-LogicalOr       := LogicalAnd ( "||" LogicalAnd )*
-LogicalAnd      := Equality ( "&&" Equality )*
-
-Equality        := Comparison ( ["==" | "!="] Comparison )*
-Comparison      := Term ( ["<" | ">" | "<=" | ">="] Term )*
-
-Term            := Factor ( ['+''-'] Factor )*
-Factor          := Primary ( ['*''/'] Primary )*
-Primary         := FuncCall | IDENTIFIER | NUM | '('E')' | "true" | "false"
-
-FuncCall        := IDENTIFIER ( "(" (Arguments) ")" )
-
-Arguments       := Expression ("," Expression)*
-DataTypes       := "short" | "int" | "long" | "char" | "void" | "float"
-
-IDENTIFIER      := TYPE_VARIABLE
-NUM             := TYPE_NUMBER
-*/
-
-/*!SECTION
-        if (((Token*)ListGet(tokens, *idx))->type == TOKEN_TYPE_VARIABLE) {
-            if (((Token*)ListGet(tokens, ListNext(tokens, *idx)))->type == TOKEN_TYPE_ASSIGNMENT) {
-                node2 = GetIdentifier(tokens, idx);
-                node1 = OP_(node1, node2, AST_ELEM_OPERATION_ASSIGNMENT);
-
-            } else {
-                // fprintf(stderr, "yes Code: %zu\n", token->type);
-                node2 = GetExpression(tokens, idx);
-                node1 = OP_(node1, node2, AST_ELEM_OPERATION_ASSIGNMENT);
-
-                break;
-            }
-        } else {
-            node2 = GetExpression(tokens, idx);
-            node1 = OP_(node1, node2, AST_ELEM_OPERATION_ASSIGNMENT);
-
-            break;
-            // assert(0); //FIXME - error handler
-        }
-*/

@@ -28,7 +28,6 @@ void DotVizualizeSymbolTable(const SymbolTable* table, const char* file_name) {
     fprintf(fp, "edge [fontsize=10,  color=green];\n\n\t");
     fprintf(fp, "node [shape=record, style=\"filled\", fillcolor=\"lightpink\"];\n\t");
 
-    /* Here your code */
     fprintf(fp, "stack [label=\"<0> 0 ");
     for (size_t i = 1; i < table->end_scopes->meta.capacity; i++) {
         fprintf(fp, "| <%zu> %zu ", i, i);

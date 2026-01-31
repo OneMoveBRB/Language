@@ -30,7 +30,6 @@ static uint64_t fnv1a_hash(const void* ukey, size_t ukey_size);
 static uint32_t murmurhash2_to_index(const void* ukey, size_t ukey_size, uint32_t table_capacity);
 static uint32_t murmurhash2(const void* ukey, size_t ukey_size);
 */
-/* If the user's ukey_size is incorrect, global-buffer-overflow may occur in the sha256_update src/sha256.c:118 */
 
 HashTable_t* HashTableInit() {
     HashTable_t* table = (HashTable_t*)calloc(1, sizeof(HashTable_t));

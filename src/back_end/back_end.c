@@ -6,14 +6,9 @@
 #include "../../include/ast/ast.h"
 #include "../../include/symbol_table/symbol_table.h"
 #include "../../include/symbol_table/symbol_table_dump.h"
+#include "../../include/back_end/asm_instructions.h"
 #include "../../clibs/Buffer/include/buffer.h"
-/*
-typedef struct AssemblyCodeSetup {
-    Buffer_t* assembly_code;
-    size_t if_cnt;
-    size_t while_cnt;
-} AssemblyCodeSetup;
-*/
+
 typedef struct BackEnd {
     AST* ast;
     SymbolTable* symbol_table;
@@ -22,33 +17,22 @@ typedef struct BackEnd {
     size_t if_cnt;
     size_t while_cnt;
     size_t bool_cnt;
-    size_t cur_ram_offset;
 } BackEnd;
-
-const int MAX_LEN = 256;
-
-const char* bool_cmp =  " false_comparison_result#\n"
-                        "PUSH 1\n"
-                        "JMP truth_comparison_result#\n"
-                        ":   false_comparison_result#\n"
-                        "PUSH 0\n"
-                        ":   truth_comparison_result#\n\n";
-
-const char* unary_bool_cmp = "PUSH 1\n"
-                             "JA false_comparison_result#\n"
-                             "PUSH 1\n"
-                             "JMP truth_comparison_result#\n"
-                             ":   false_comparison_result#\n"
-                             "PUSH 0\n"
-                             ":   truth_comparison_result#\n\n";
 
 static BackEndErr_t AssemblyCodeGeneration(BackEnd* backend);
 
 static BackEndErr_t AST_NodeHandler(AST_Node* node, BackEnd* backend);
 
 static BackEndErr_t SentinelHandler(AST_Node* node, BackEnd* backend);
-
 static BackEndErr_t ExpressionHandler(AST_Node* node, BackEnd* backend);
+static BackEndErr_t DeclarationHandler(AST_Node* node, BackEnd* backend);
+static BackEndErr_t FuncCallHandler(AST_Node* node, BackEnd* backend);
+static BackEndErr_t ReturnHandler(AST_Node* node, BackEnd* backend);
+static BackEndErr_t PrintHandler(AST_Node* node, BackEnd* backend);
+
+static BackEndErr_t FuncDecHandler(AST_Node* node, BackEnd* backend);
+static BackEndErr_t ParamDecHandler(AST_Node* node, BackEnd* backend);
+static BackEndErr_t VarDecHandler(AST_Node* node, BackEnd* backend);
 
 static BackEndErr_t AddHandler(AST_Node* node, BackEnd* backend);
 static BackEndErr_t SubHandler(AST_Node* node, BackEnd* backend);
@@ -87,15 +71,14 @@ BackEndErr_t CodeGeneration(AST* ast) {
     BackEnd back_end = {
         .ast = ast,
         .symbol_table = symbol_table,
-        .scope_level = (unsigned int)-1,
+        .scope_level = 0,
         .assembly_code = assembly_code,
         .if_cnt = 0,
         .while_cnt = 0,
         .bool_cnt = 0,
-        .cur_ram_offset = 0
     };
 
-    // here your code
+    // will be ast -> asm && asm -> bytecode
     AssemblyCodeGeneration(&back_end);
 
     printf("%s", (char*)back_end.assembly_code->data);
@@ -112,19 +95,17 @@ static BackEndErr_t AssemblyCodeGeneration(BackEnd* backend) {
     backend->symbol_table->global_scope->scope_ram_offset = 0;
 
     Buffer_t* assembly_code = backend->assembly_code;
-    const char* regs_init = "PUSH 0\n"
-                            "POPR RAX\n\n"
-                            "PUSH 0\n"
-                            "POPR RBX\n\n"
-                            "PUSH 0\n"
-                            "POPR RCX\n\n"
-                            "JMP main\n\n";
 
-    BufferPush(assembly_code, regs_init, strlen(regs_init));
+    BufferPush(assembly_code, asm_base,          strlen(asm_base));
+    BufferPush(assembly_code, move_rax_by_one,   strlen(move_rax_by_one));
+    BufferPush(assembly_code, enter_scope,       strlen(enter_scope));
+    BufferPush(assembly_code, exit_scope,        strlen(exit_scope));
+    BufferPush(assembly_code, set_rcx_offset,    strlen(set_rcx_offset));
+    BufferPush(assembly_code, get_rax_by_offset, strlen(get_rax_by_offset));
 
     // test
-    fprintf(stderr, "Code: %d\n", ExpressionHandler(backend->ast->root->left, backend));
-    // AST_NodeHandler(backend->ast->root, backend);
+    // fprintf(stderr, "Code: %d\n", ExpressionHandler(backend->ast->root->left, backend));
+    AST_NodeHandler(backend->ast->root, backend);
 
     return BACK_END_OK;
 }
@@ -136,9 +117,23 @@ static BackEndErr_t AST_NodeHandler(AST_Node* node, BackEnd* backend) {
     if (node->type == AST_ELEM_TYPE_OPERATION && node->data.operation == AST_ELEM_OPERATION_SENTINEL) {
         SentinelHandler(node, backend);
 
+    } else if (node->type == AST_ELEM_TYPE_DECLARATION) {
+        DeclarationHandler(node, backend);
+
     } else if (node->type == AST_ELEM_TYPE_VARIABLE) {
         VariableHandler(node, backend);
+
+    } else if (node->type == AST_ELEM_TYPE_OPERATION && node->data.operation == AST_ELEM_OPERATION_RETURN) {
+        ReturnHandler(node, backend);
+        
+    } else if (node->type == AST_ELEM_TYPE_OPERATION && node->data.operation == AST_ELEM_OPERATION_PRINT) {
+        PrintHandler(node, backend);
+
     }
+    // else if (node->type == AST_ELEM_TYPE_OPERATION && node->data.operation == AST_ELEM_OPERATION_CALL) {
+    //     FuncCallHandler(node, backend);
+
+    // }
 
     return BACK_END_OK;
 }
@@ -146,32 +141,32 @@ static BackEndErr_t AST_NodeHandler(AST_Node* node, BackEnd* backend) {
 static BackEndErr_t SentinelHandler(AST_Node* node, BackEnd* backend) {
     assert( node    != NULL );
     assert( backend != NULL );
+    // fprintf(stderr, "Sc_l: %u, Sy_l: %u, %p\n", backend->scope_level, backend->symbol_table->current_scope->level, node);
 
-    // if (backend->symbol_table->current_scope != backend->symbol_table->global_scope 
-    //     && (backend->symbol_table->current_scope != NULL)) {
-    //     DotVizualizeSymbolTable(backend->symbol_table, "sym_tab.txt");
-    //     getchar();
-    // }
-
-    if (node->right == NULL) {
-        SymbolTableExitScope(backend->symbol_table);
-        if (backend->symbol_table->current_scope != NULL) {
-            backend->cur_ram_offset = backend->symbol_table->current_scope->scope_ram_offset;
+    if (backend->scope_level > backend->symbol_table->current_scope->level) {
+        if (backend->scope_level == backend->symbol_table->current_scope->level + 1) {
+            SymbolTableEnterScope(backend->symbol_table);
+            BufferPush(backend->assembly_code, enter_scope_call, strlen(enter_scope_call));
+        } else {
+            assert(0); //FIXME - error handler
         }
-
-        return BACK_END_OK;
     }
 
     ++backend->scope_level;
 
-    while (backend->scope_level > backend->symbol_table->current_scope->level) {
-        SymbolTableEnterScope(backend->symbol_table);
-        backend->symbol_table->current_scope->scope_ram_offset = backend->cur_ram_offset;
-    }
-    
     AST_NodeHandler(node->left, backend);
 
     --backend->scope_level;
+
+    if (node->right == NULL) {
+        if (backend->symbol_table->current_scope != backend->symbol_table->global_scope) {
+            BufferPush(backend->assembly_code, exit_scope_call, strlen(exit_scope_call));
+            // fprintf(stderr, "%p\n", backend->symbol_table->current_scope);
+        }
+        SymbolTableExitScope(backend->symbol_table);
+
+        return BACK_END_OK;
+    }
 
     AST_NodeHandler(node->right, backend);
 
@@ -183,13 +178,51 @@ static BackEndErr_t DeclarationHandler(AST_Node* node, BackEnd* backend) {
     assert( backend != NULL );
 
     AST_Node* right_node = node->right; assert( right_node != NULL );
-    AST_Node* left_node  = node->left;  assert( left_node  != NULL );
+    AST_Node* left_node  = node->left;  assert( left_node  == NULL ); //FIXME - error handler
 
-    if (    right_node->type == AST_ELEM_TYPE_OPERATION 
-        &&  right_node->data.operation == AST_ELEM_OPERATION_ASSIGNMENT ) {
-        
+    if (right_node->type == AST_ELEM_TYPE_VARIABLE && right_node->right != NULL) {
+        return FuncDecHandler(node, backend);
+
+    } else {
+        return VarDecHandler(node, backend);
     }
 
+    return BACK_END_OK;
+}
+
+static BackEndErr_t FuncCallHandler(AST_Node* node, BackEnd* backend) {
+    assert( node    != NULL );
+    assert( backend != NULL );
+
+    AST_Node* sentinel = node->left;
+    while (sentinel != NULL) {
+        ExpressionHandler(sentinel->right, backend);
+        sentinel = sentinel->left;
+    }
+    
+    char func_name[MAX_LEN] = "";
+
+    int func_name_len = snprintf(func_name, MAX_LEN, "CALL %s\n", node->right->data.variable);
+
+    BufferPush(backend->assembly_code, func_name, (size_t)func_name_len);
+
+    return BACK_END_OK;
+}
+
+static BackEndErr_t ReturnHandler(AST_Node* node, BackEnd* backend) {
+    assert( node    != NULL );
+    assert( backend != NULL );
+    // fprintf(stderr, "[RET]Sc_l: %u, Sy_l: %u, %p\n", backend->scope_level, backend->symbol_table->current_scope->level, node);
+
+    ExpressionHandler(node->right, backend);
+
+    // --backend->scope_level;
+    SymbolTableExitScope(backend->symbol_table);
+    BufferPush(backend->assembly_code, exit_scope_call, strlen(exit_scope_call));
+
+    BufferPush(backend->assembly_code, ret, strlen(ret));
+
+    return BACK_END_OK;
 }
 
 static BackEndErr_t ExpressionHandler(AST_Node* node, BackEnd* backend) {
@@ -252,13 +285,97 @@ static BackEndErr_t ExpressionHandler(AST_Node* node, BackEnd* backend) {
         return LorHandler(node, backend);
 
     case AST_ELEM_OPERATION_CALL:
-        assert(0);
+        return FuncCallHandler(node, backend);
     
     default:
         assert(0);
     }
 
     return BACK_END_ERROR;
+}
+
+static BackEndErr_t PrintHandler(AST_Node* node, BackEnd* backend) {
+    assert( node    != NULL );
+    assert( backend != NULL );
+
+    VariableHandler(node->right, backend);
+
+    BufferPush(backend->assembly_code, out, strlen(out));
+
+    return BACK_END_OK;
+}
+
+// ============================= DECLARATION HANDLER =============================
+
+static BackEndErr_t FuncDecHandler(AST_Node* node, BackEnd* backend) {
+    assert( node    != NULL );
+    assert( backend != NULL );
+    // fprintf(stderr, "[FUNC]Sc_l: %u, Sy_l: %u, %p\n", backend->scope_level, backend->symbol_table->current_scope->level, node);
+
+    AST_Node* right_node = node->right;
+
+    char func_label[MAX_LEN] = "";
+
+    int func_label_len = snprintf(func_label, MAX_LEN, ": %s\n", right_node->data.variable);
+
+    BufferPush(backend->assembly_code, func_label, (size_t)func_label_len);
+
+    // ++backend->scope_level;
+    SymbolTableEnterScope(backend->symbol_table);
+    BufferPush(backend->assembly_code, enter_scope_call, strlen(enter_scope_call));
+
+    AST_Node* var_dec = right_node->left;
+    while (var_dec != NULL) {
+        // fprintf(stderr, "addr: %p\n", var_dec);
+        ParamDecHandler(var_dec, backend);
+        var_dec = var_dec->left;
+    }
+
+    AST_NodeHandler(right_node->right, backend);
+
+    return BACK_END_OK;
+}
+
+static BackEndErr_t ParamDecHandler(AST_Node* node, BackEnd* backend) {
+    assert( node    != NULL );
+    assert( backend != NULL );
+
+    AST_Node* right_node = node->right;
+
+    BufferPush(backend->assembly_code, ram_push, strlen(ram_push));
+
+    backend->symbol_table->current_scope->scope_ram_offset++;
+
+    SymbolTableInsert(backend->symbol_table, right_node->data.variable, 
+                        SYM_TYPE_VARIABLE, DATA_TYPE_INT, right_node, 
+                        backend->symbol_table->current_scope->scope_ram_offset);
+
+    return BACK_END_OK;
+}
+
+static BackEndErr_t VarDecHandler(AST_Node* node, BackEnd* backend) {
+    assert( node    != NULL );
+    assert( backend != NULL );
+
+    AST_Node* right_node = node->right;
+
+    if (    right_node->type == AST_ELEM_TYPE_OPERATION 
+        &&  right_node->data.operation == AST_ELEM_OPERATION_ASSIGNMENT ) {
+
+        ExpressionHandler(right_node->right, backend);
+        BufferPush(backend->assembly_code, ram_push, strlen(ram_push));
+
+    } else {
+        BufferPush(backend->assembly_code, move_rax_by_one_call, strlen(move_rax_by_one_call));
+    }
+
+    backend->symbol_table->current_scope->scope_ram_offset++;
+
+    SymbolTableInsert(backend->symbol_table, right_node->left->data.variable, 
+                        SYM_TYPE_VARIABLE, DATA_TYPE_INT, right_node->left, 
+                        backend->symbol_table->current_scope->scope_ram_offset);
+
+    return BACK_END_OK;
 }
 
 // ================================ MATH HANDLER ================================
@@ -549,11 +666,8 @@ static BackEndErr_t VariableHandler(AST_Node* node, BackEnd* backend) {
 
     char temp_buffer[MAX_LEN] = "";
 
-    snprintf(temp_buffer, MAX_LEN,  "PUSHR RAX\n"
-                                    "PUSH %d\n"
-                                    "ADD\n"
-                                    "POPR RCX\n"
-                                    "PUSHM [RCX]\n\n", (int)symbol_data->symbol_ram_offset);
+    snprintf(temp_buffer, MAX_LEN,  "PUSH %lu\n"
+                                    "CALL get_rax_by_offset\n\n", symbol_data->symbol_ram_offset);
 
     BufferPush(backend->assembly_code, temp_buffer, strlen(temp_buffer));
 

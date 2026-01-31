@@ -51,7 +51,7 @@ SymbolTableErr_t SymbolTableEnterScope(SymbolTable* table) {
         return SYM_TAB_HASH_TABLE_FAILED;
     }
 
-    new_scope->scope_ram_offset = (size_t)-1;
+    new_scope->scope_ram_offset = 0;
 
     if (new_scope->prev != NULL) {
         new_scope->level = new_scope->prev->level + 1;

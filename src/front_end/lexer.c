@@ -86,9 +86,6 @@ size_t LexicalAnalysis(const char* s, List_t* tokens) {
     const char* left_ptr = s;
 
     while (*s != '\0') {
-        // fprintf(stderr, "S_IP: %ld\n", s - left_ptr);
-        // getchar();
-
         char flag = 0;
 
         /* Comments check */
@@ -115,8 +112,6 @@ size_t LexicalAnalysis(const char* s, List_t* tokens) {
             size_t ref_str_size = strlen(ref_str);
             if (strncasecmp(s, ref_str, ref_str_size) == 0) {
                 ListPushToken(tokens, reference_types[i].type);
-
-                // fprintf(stderr, "%s\n", ref_str);
 
                 s += ref_str_size;
                 flag = 1;
@@ -146,7 +141,6 @@ size_t LexicalAnalysis(const char* s, List_t* tokens) {
         if (flag) continue;
 
         /* Number check */
-        // scanf()
         if (isdigit(*s)) {
             const char* start_ptr = s;
             size_t len = 0;
@@ -168,7 +162,6 @@ size_t LexicalAnalysis(const char* s, List_t* tokens) {
                 char* endptr = NULL;
                 double num = strtod(start_ptr, &endptr);
 
-                // ListPushToken(tokens, start_ptr, len, OPERATION_NUMBER);
                 if (endptr == s) {
                     ListPushToken(tokens, TOKEN_TYPE_CONST, CONST_TYPE_DOUBLE, num);
                 }

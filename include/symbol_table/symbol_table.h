@@ -67,10 +67,5 @@ SymbolData* SymbolTableLookUp(SymbolTable* table, const char* symbol_name);
 SymbolTableErr_t SymbolTableInsert(SymbolTable* table,       const char* symbol_name,
                                    SymbolType   symbol_type, DataType data_type, 
                                    void*        ast_node,    size_t symbol_ram_offset);
-/*
-    HashTable_t* global_scope;
-    List_t* func_scopes;
-    size_t  cur_func;
-*/
 
 #endif /* SYMBOL_TABLE_H */
