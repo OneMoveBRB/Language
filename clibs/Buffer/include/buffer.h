@@ -20,6 +20,7 @@ Buffer_t* BufferInit(size_t capacity, size_t element_size);
 BufferErr_t BufferRealloc(Buffer_t* buffer, size_t new_capacity);
 BufferErr_t BufferDestroy(Buffer_t** buffer_ptr);
 
+BufferErr_t BufferRelease(Buffer_t* buffer);
 BufferErr_t BufferRead(Buffer_t* buffer, size_t count, FILE* fp);
 BufferErr_t BufferPush(Buffer_t* buffer, const void* source, size_t count);
 

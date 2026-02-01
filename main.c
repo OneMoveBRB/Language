@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "include/ast/ast.h"
 #include "include/front_end/front_end.h"
@@ -11,8 +12,8 @@ int main() {
 
     FrontEnd(&ast, file_name);
 
-    CodeGeneration(ast);
-
+    BackEnd(ast);
+    
     AST_Destroy(&ast);
 
     return 0;

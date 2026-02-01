@@ -7,8 +7,9 @@ buffer="clibs/Buffer/src/buffer.c"
 
 front_end="src/front_end/front_end.c src/front_end/lexer.c src/front_end/syntax.c"
 ast="src/ast/ast.c src/ast/ast_dump.c"
+asm="src/back_end/asm/asm.c src/back_end/asm/asm_dump.c"
 symbol_table="src/symbol_table/symbol_table.c src/symbol_table/symbol_table_dump.c"
-back_end="src/back_end/back_end.c"
+back_end="src/back_end/back_end.c src/back_end/asm_gener.c $asm"
 io="src/io.c"
 
 mode_flag="-D _DEBUG"

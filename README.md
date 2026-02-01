@@ -334,3 +334,11 @@ Land and Lor will be checked using indicator functions:
 * a && b <=> I(a) * I(b)
 * a || b <=> I(a) + I(b) - I(a) * I(b)
 
+........................................................................................................................................................................................
+### Scope Handler
+
+### Initialization Handler
+
+### Keeping Variables
+
+

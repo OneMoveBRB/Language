@@ -7,9 +7,12 @@ digraph G {
   node2 [label="{cond | {<l> l | <r> r}}"];
   node3 [label="{body | {<l> l | <r> r}}"];
   node4 [label="{; | {<l> l | <r> r}}"];
+  node5 [label="{; | {<l> l | <r> r}}"];
+  
   
   node1:l -> node2 [color=red, dir=both, arrowhead=normal];
   node1:r -> node4 [color=green, dir=both, arrowhead=normal];
   node4:l -> node3 [color=red, dir=both, arrowhead=normal];
+  node4:r -> node5 [color=green, dir=both, arrowhead=normal];
   
 }

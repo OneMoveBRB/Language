@@ -43,14 +43,19 @@ const char* exit_scope =            ": exit_scope\n"
 const char* exit_scope_call =       "CALL exit_scope\n";
 
 const char* set_rcx_offset =        ": set_rcx_offset\n"
-                                    "PUSHR RBX\n"
+                                    "PUSHR RCX\n"
                                     "ADD\n"
                                     "POPR RCX\n"
                                     "RET\n\n\n";
 
-const char* get_rax_by_offset =     ": get_rax_by_offset\n"
+const char* get_rcx_by_offset =     ": get_rcx_by_offset\n"
                                     "CALL set_rcx_offset\n"
                                     "PUSHM [RCX]\n"
+                                    "RET\n\n\n";
+
+const char* set_rcx_by_offset =     ": set_rcx_by_offset\n"
+                                    "CALL set_rcx_offset\n"
+                                    "POPM [RCX]\n"
                                     "RET\n\n\n";
 
 const char* bool_cmp =              " false_comparison_result#\n"
@@ -74,5 +79,14 @@ const char* ram_push =              "POPM [RAX]\n"
 const char* ret =                   "RET\n\n";
 
 const char* out =                   "OUT\n\n";
+
+const char* if_statement =          "PUSH 1\n"
+                                    "JA endif#\n\n";
+
+const char* begif =                 ": begif#\n\n";
+
+const char* begif_jmp =             "JMP begif#\n";
+
+const char* endif =                 ": endif#\n\n";
 
 #endif /* ASM_INSTRUCTIONS_H */

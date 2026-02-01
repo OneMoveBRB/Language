@@ -72,6 +72,13 @@ BufferErr_t BufferDestroy(Buffer_t** buffer_ptr) {
     return BUFFER_OK;
 }
 
+/* saves the actual data size of the buffer + zero element */
+BufferErr_t BufferRelease(Buffer_t* buffer) {
+    assert( buffer != NULL );
+
+    return BufferRealloc(buffer, buffer->size + 1);
+}
+
 /* read count objects to buffer from fp */
 BufferErr_t BufferRead(Buffer_t* buffer, size_t count, FILE* fp) {
     assert( buffer    != NULL );

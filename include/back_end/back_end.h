@@ -10,6 +10,6 @@ typedef enum BackEndErr_t {
 
 typedef struct AST AST;
 
-BackEndErr_t CodeGeneration(AST* ast);
+BackEndErr_t BackEnd(AST* ast);
 
 #endif /* BACK_END_H */
