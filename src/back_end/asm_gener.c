@@ -211,7 +211,11 @@ static BackEndErr_t ReturnHandler(AST_Node* node, ASM_GenerSetup* backend) {
     assert( backend != NULL );
     // fprintf(stderr, "[RET]Sc_l: %u, Sy_l: %u, %p\n", backend->scope_level, backend->symbol_table->current_scope->level, node);
 
+    ++backend->scope_level;
+
     ExpressionHandler(node->right, backend);
+
+    --backend->scope_level;
 
     for (size_t i = 0; i < backend->symbol_table->current_scope->level; i++) {
         BufferPush(backend->assembly_code, exit_scope_call, strlen(exit_scope_call));

@@ -53,12 +53,12 @@ TokenTypeMapping reference_types[] = {
     {"/"     ,   TOKEN_TYPE_BIN_DIV             },
     // {"^",   TOKEN_TYPE_BIN_POW},
 
-    {"<"     ,   TOKEN_TYPE_BIN_LT              },
-    {">"     ,   TOKEN_TYPE_BIN_GT              },
     {"<="    ,   TOKEN_TYPE_BIN_LE              },
     {">="    ,   TOKEN_TYPE_BIN_GE              },
-    {"=="    ,   TOKEN_TYPE_BIN_EE              },
+    {"<"     ,   TOKEN_TYPE_BIN_LT              },
+    {">"     ,   TOKEN_TYPE_BIN_GT              },
     {"!="    ,   TOKEN_TYPE_BIN_NE              },
+    {"=="    ,   TOKEN_TYPE_BIN_EE              },
 
     {"&&"    ,   TOKEN_TYPE_LAND                },
     {"||"    ,   TOKEN_TYPE_LOR                 },
