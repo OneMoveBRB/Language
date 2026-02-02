@@ -1,7 +1,7 @@
 # Frontend
-содержит Лексический и Синтаксический анализы
+includes Lexical and Syntax Analysis
 
-## Грамматика
+## Grammar
 ```
 // []  - works exactly 1 time
 // ()  - works 0 или 1 times
@@ -56,21 +56,21 @@ IDENTIFIER      := TYPE_VARIABLE
 NUM             := TYPE_NUMBER
 ```
 
-# Таблица имён (Symbol Table)
-выполнено в виде polytree (directed tree), содержащего области видимости в качестве вершин. Глобальная область видимости - корень, последние вложенные области видимости - листья (указатели на них расположены в дополнительном стеке).
-Каждый scope содержит Хэш-таблицу символов (переменных). Ветви, связанные с функциями, объявленными глобально, могут отходить от корня (вложенные функции не допускаются).
+# Symbol Table
+is the polytree (directed tree) consisting of scopes (nodes). Global scope - the root, last nested scopes - leaves (pointers to them are located in an additional stack).
+Each scope consists HashTable of symbols. Branches related to functions declared globally can extend from the root (there can't be nested functions).
 
-![assignment](docs/img_sym_tab_example.svg)
+![assignment](img_sym_tab.svg)
 
-# Стандарт AST
+# AST standart
 
-## Присваивание
+## Assignment
 ```c
 x = y = z = expr;
 ```
 ![assignment](docs/ast_standart/assignment.svg)
 
-## Инициализация переменных
+## Variable Declaration
 ```c
 int x = expr;
 ```
@@ -81,15 +81,15 @@ int x;
 ```
 ![vardec2](docs/ast_standart/vardec2.svg)
 
-## Функции
+## Functions
 
-### Инициализация функций
+### Function Declaration
 ```c
 int func(int a, char b) {...}
 ```
 ![function_declaration](docs/ast_standart/func_dec.svg)
 
-### Вызов функций
+### Function Call
 ```c
 func(args)
 ```
@@ -101,9 +101,9 @@ return expr;
 ```
 ![return_statement](docs/ast_standart/return_statement.svg)
 
-## Циклы
+## Loops
 
-### While
+### While Statement
 ```c
 while (cond) {
   body;
@@ -111,9 +111,9 @@ while (cond) {
 ```
 ![while_statement](docs/ast_standart/while_statement.svg)
 
-## Условные операторы
+## Conditional operators
 
-### If
+### If Statement
 ```c
 if (cond) {
   body;
@@ -125,14 +125,14 @@ if (cond) {
 ```
 ![if_statement](docs/ast_standart/if_statement.svg)
 
-## Маркерные вершины
+## Mark Nodes
 
-### ';' - служебная вершина
-Цель:
-* связывает выражения, параметры, аргументы
-* обозначает область видимости
+### ';' - sentinel node
+Aim:
+* connects statements, parameters, arguments
+* marks scope
 
-## Пример кода
+## Code Example
 ```c
 int fib(int n) {
     int a = 1;
@@ -162,7 +162,7 @@ int main() {
 
 # Backend
 
-## Генерация Ассемблерного Кода
+## Assembly Code Generation
 Обход AST выполняется в прямом порядке следования инструкций написанной пользователем программы, генерируя ассемблерный код.
 
 В SPU хранятся 3 регистра: RAX, RBX, RCX.
@@ -172,7 +172,7 @@ int main() {
 * используется для сохранения/удаления данных в RAM.
 
 
-### Порядок заполнения RAM
+### The order of filling RAM.
 RAM заполняется последовательно слева направо с помощью RAX:
 ```c
 int x = 86;
@@ -188,29 +188,22 @@ CALL move_rax_by_one
 
 Для доступа к переменной в RAM используется RCX:
 ```c
-int x = 86;
-print(x);
+x;
 ```
 ```asm
 : set_rcx_offset
-PUSHR RCX
+PUSHR RBX
 ADD
 POPR RCX
 RET
 
-: get_rcx_by_offset
+: get_rax_by_offset
 CALL set_rcx_offset
 PUSHM [RCX]
 RET
 
-...
-
-; get variable "x"
 PUSH 1                  ; rax_offset for x
-CALL get_rcx_by_offset
-OUT
-
-...
+CALL get_rax_by_offset
 ```
 Для каждой переменной значение относительного смещения RAX в RAM на момент её инициализации хранится в символьной таблице.
 
@@ -292,57 +285,20 @@ CALL exit_scope
 RET
 ```
 
-Пример с получением значения переменной из другой области видимости:
-```c
-{
-  int x = 86;
-  {
-    print(x);
-  }
-}
-```
-```asm
-: set_rcx_offset
-PUSHR RCX
-ADD
-POPR RCX
-RET
-
-: get_rcx_by_offset
-CALL set_rcx_offset
-PUSHM [RCX]
-RET
-
-...
-
-CALL enter_scope
-; get variable "x"
-PUSHR  RBX
-POPR   RCX
-PUSHM [RCX]
-POPR   RCX
-PUSH 1                ; rax_offset for x in the previous scope
-CALL get_rcx_by_offset
-OUT
-CALL exit_scope
-
-...
-```
-
-### Булевы операции
-Два параметра, принимаемые бинарными отношениями вида
+### Boolean Expressions Handler
+Two parameters accepted by binary relations of the form
 * <
 * \>
 * ==
 * !=
 
-заменяются в стеке на 1 или 0 с помощью "JUMP".
+are replaced on the stack by 1 or 0 with jumps.
 
-Пример:
+Example:
 ```c
 2 < 3
 ```
-должно выглядеть так
+should look like this
 ```asm
 PUSH 2
 PUSH 3
@@ -354,15 +310,15 @@ PUSH 0
 :   truth_comparison_result
 ```
 
-Если булева операция содержит только число, то это число заменяется на
+If boolean expression consists only of a number, then this number is replaced by
 * 1, number >= 1
 * 0, number < 1
 
-Пример:
+Example:
 ```c
 2
 ```
-должно выглядеть так
+should look like this
 ```asm
 PUSH 2
 PUSH 1
@@ -374,6 +330,15 @@ PUSH 0
 :   truth_comparison_result
 ```
 
-Land и Lor проверяются с помощью индикаторных функций:
+Land and Lor will be checked using indicator functions:
 * a && b <=> I(a) * I(b)
 * a || b <=> I(a) + I(b) - I(a) * I(b)
+
+........................................................................................................................................................................................
+### Scope Handler
+
+### Initialization Handler
+
+### Keeping Variables
+
+
